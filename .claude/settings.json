@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /Users/falgunitakawale/Desktop/projects/NagarVaani/.claude/hooks/auto-commit-push.sh",
+            "timeout": 30,
+            "statusMessage": "Auto-committing and pushing changes…"
+          }
+        ]
+      }
+    ]
+  }
+}
