@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+sqlalchemy>=2.0
+aiosqlite
+asyncpg
+anthropic
+python-jose[cryptography]
+bcrypt
+pydantic
+pydantic-settings
+email-validator
+python-dotenv
+greenlet
+python-multipart
+httpx
+openai
+cloudinary

@@ -1,0 +1,120 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   API CLIENT + AUTH STATE
+   Run the API locally first: cd Backend && source .venv/bin/activate &&
+   uvicorn main:app --reload --port 8000
+═══════════════════════════════════════════════════════════════════════════ */
+// Local: the static HTML is opened from disk or a dev server, API on :8000.
+// Deployed: FastAPI serves the frontend itself, so the API is same-origin.
+import { t } from './i18n.js';
+
+export const API_BASE = (window.location.hostname === 'localhost' ||
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.protocol === 'file:')
+  ? 'http://127.0.0.1:8000/api'
+  : '/api';
+
+export let authToken = localStorage.getItem('nv_token') || null;
+export let authUser = JSON.parse(localStorage.getItem('nv_user') || 'null');
+
+export async function api(path, opts = {}) {
+  const headers = Object.assign({}, opts.headers);
+  if (!(opts.body instanceof FormData)) headers['Content-Type'] = 'application/json';
+  if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+
+  let res;
+  try {
+    res = await fetch(API_BASE + path, Object.assign({}, opts, { headers }));
+  } catch (err) {
+    throw new Error('Backend unreachable — is uvicorn running on ' + API_BASE + '?');
+  }
+  const text = await res.text();
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch (_) {
+      // Non-JSON body — a proxy error page, a stack trace, etc. Surface the
+      // status rather than a confusing "Unexpected token <" from JSON.parse.
+      data = { detail: `Server returned ${res.status} ${res.statusText || ''}`.trim() };
+    }
+  }
+  if (!res.ok) {
+    const detail = data && data.detail;
+    const msg = typeof detail === 'object' && detail !== null
+      ? (detail.reason || detail.msg || JSON.stringify(detail))
+      : (detail || res.statusText || `Request failed (${res.status})`);
+    const err = new Error(msg);
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+export function requireLogin(message) {
+  if (authToken) return true;
+  showToastRef(message || t('js.loginfirst'));
+  setTimeout(() => navRef('login'), 600);
+  return false;
+}
+
+// showToast (ui.js) and nav (nav.js) both depend on auth state, and auth state
+// is depended on by nearly everything else — importing them directly here would
+// create a real circular dependency at module-eval time. These setters let
+// main.js wire the references once everything is loaded, instead.
+let showToastRef = () => {};
+let navRef = () => {};
+let modeRefs = { official: () => {}, citizen: () => {} };
+export function setUiRefs(showToastFn, navFn, modes) {
+  showToastRef = showToastFn;
+  navRef = navFn;
+  if (modes) modeRefs = modes;
+}
+
+export function logout() {
+  authToken = null;
+  authUser = null;
+  try { localStorage.removeItem('nv_token'); localStorage.removeItem('nv_user'); } catch (_) {}
+  applyAuthUI();
+}
+
+export function storeSession(token, user) {
+  authToken = token;
+  authUser = user;
+  localStorage.setItem('nv_token', token);
+  localStorage.setItem('nv_user', JSON.stringify(user));
+  applyAuthUI();
+}
+
+export function applyAuthUI() {
+  const avatar = document.getElementById('avatar-btn');
+  const signinBtn = document.getElementById('signin-topbtn');
+  const signoutBtn = document.getElementById('signout-topbtn');
+  const portalBtn = document.getElementById('official-portal-btn');
+  const myPanel = document.getElementById('mycomplaints-panel');
+  const guestPanel = document.getElementById('mycomplaints-panel-guest');
+  const myPanelEmail = document.getElementById('mycomplaints-panel-email');
+  const isOfficial = !!(authUser && authUser.role === 'official');
+  if (authUser) {
+    const initials = String(authUser.name || '?').trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    avatar.textContent = initials || '?';
+    avatar.onclick = () => (isOfficial ? modeRefs.official() : navRef('mycomplaints'));
+    signinBtn.style.display = 'none';
+    if (signoutBtn) signoutBtn.hidden = false;
+  } else {
+    avatar.textContent = '?';
+    avatar.onclick = () => navRef('login');
+    signinBtn.style.display = 'inline-block';
+    if (signoutBtn) signoutBtn.hidden = true;
+  }
+  // The "Your complaints" widget in the right panel is account-specific —
+  // never show it (or a real email) to a signed-out visitor.
+  if (myPanel && guestPanel) {
+    myPanel.hidden = !authUser;
+    guestPanel.hidden = !!authUser;
+    if (authUser && myPanelEmail) myPanelEmail.textContent = authUser.email || 'your email';
+  }
+  if (portalBtn) portalBtn.hidden = !isOfficial;
+  // Officials land in their own portal; everyone else gets the citizen app.
+  if (isOfficial) modeRefs.official(); else modeRefs.citizen();
+}

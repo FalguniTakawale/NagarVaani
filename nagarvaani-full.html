@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NagarVaani — Your Voice, Your City</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo" onclick="nav('landing')">
+    <div class="logo-dot"></div>
+    NagarVaani
+  </div>
+  <div class="topbar-spacer"></div>
+  <div class="topbar-search">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input placeholder="Search complaints, areas…" data-i18n-placeholder="top.search" />
+  </div>
+  <div class="lang-wrap">
+    <button class="lang-btn" id="topbar-lang-btn" onclick="toggleLangMenu(event)">EN ▾</button>
+    <div class="lang-menu" id="lang-menu" hidden>
+      <button data-lang="en" onclick="setLanguage('en')">English</button>
+      <button data-lang="hi" onclick="setLanguage('hi')">हिंदी</button>
+      <button data-lang="mr" onclick="setLanguage('mr')">मराठी</button>
+      <button data-lang="ta" onclick="setLanguage('ta')">தமிழ்</button>
+    </div>
+  </div>
+  <button class="notif-btn" onclick="showToast('3 updates on your complaints')">
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    <div class="notif-dot"></div>
+  </button>
+  <div class="avatar-btn" id="avatar-btn" onclick="nav('login')" title="Login">?</div>
+  <button class="topbar-portal" id="official-portal-btn" hidden onclick="switchToOfficialMode()">🏛️ Portal</button>
+  <button class="topbar-signin" id="signin-topbtn" onclick="nav('login')" data-i18n="top.signin">Sign in</button>
+  <button class="topbar-signout" id="signout-topbtn" hidden onclick="doSignOut()" data-i18n="top.signout">Sign out</button>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LEFT NAV (shared across feed pages)
+═══════════════════════════════════════════ -->
+<div class="left-nav" id="left-nav">
+  <div class="nav-section-label" data-i18n="nav.browse">Browse</div>
+  <div class="nav-item active" id="nav-home" onclick="nav('home')">
+    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span data-i18n="nav.home">Home</span>
+  </div>
+  <div class="nav-item" id="nav-trending" onclick="nav('trending')">
+    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span data-i18n="nav.trending">Trending</span>
+  </div>
+  <div class="nav-item" id="nav-nearme" onclick="nav('nearme')">
+    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    <span data-i18n="nav.nearme">Near me</span>
+  </div>
+  <div class="nav-divider"></div>
+  <div class="nav-section-label" data-i18n="nav.account">My account</div>
+  <div class="nav-item" id="nav-mycomplaints" onclick="nav('mycomplaints')">
+    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <span data-i18n="nav.mycomplaints">My complaints</span>
+  </div>
+  <div class="nav-item" onclick="showToast('My votes page coming soon')">
+    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+    <span data-i18n="nav.myvotes">My votes</span>
+  </div>
+  <div class="nav-divider"></div>
+  <div class="nav-section-label" data-i18n="nav.info">Info</div>
+  <div class="nav-item" onclick="showToast('About page coming soon')">
+    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span data-i18n="nav.about">About</span>
+  </div>
+  <div class="nav-item" onclick="nav('govt')">
+    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+    <span data-i18n="nav.govt">Govt dashboard</span>
+  </div>
+  <div class="nav-divider"></div>
+  <div class="nav-item nav-corruption" id="nav-corruption" onclick="nav('corruption')">
+    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span data-i18n="nav.corruption">Report corruption</span>
+  </div>
+  <div class="nav-bottom">
+    <button class="report-btn" onclick="nav('submit')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span data-i18n="nav.report">Report an issue</span>
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     RIGHT PANEL
+═══════════════════════════════════════════ -->
+<div class="right-panel" id="right-panel">
+  <div class="panel-card">
+    <div class="panel-label">Ward 12 · <span data-i18n="panel.thismonth">this month</span></div>
+    <div class="stat-grid">
+      <div class="mini-stat"><div class="mini-stat-num">142</div><div class="mini-stat-label" data-i18n="stat.open">Open</div></div>
+      <div class="mini-stat"><div class="mini-stat-num green">38</div><div class="mini-stat-label" data-i18n="stat.resolved">Resolved</div></div>
+      <div class="mini-stat"><div class="mini-stat-num red">11</div><div class="mini-stat-label" data-i18n="stat.critical">Critical</div></div>
+      <div class="mini-stat"><div class="mini-stat-num">6</div><div class="mini-stat-label" data-i18n="stat.inprogress">In progress</div></div>
+    </div>
+    <div class="resolution-bar"><div class="resolution-fill"></div></div>
+    <div class="resolution-text" data-i18n="panel.resolutiontext">27% resolved this month</div>
+  </div>
+  <div class="panel-card" id="mycomplaints-panel" hidden>
+    <div class="panel-label" data-i18n="panel.yourcomplaints">Your complaints</div>
+    <div class="my-complaint-item"><div class="my-c-title" data-i18n="demo.mycomplaint1">Garbage not collected, Lane 4</div><span class="status-pill status-resolved" data-i18n="pill.resolved">✓ Resolved</span></div>
+    <div class="my-complaint-item"><div class="my-c-title" data-i18n="demo.mycomplaint2">Broken streetlight near park</div><span class="status-pill status-progress" data-i18n="pill.progress">↻ In progress</span></div>
+    <div class="my-complaint-item"><div class="my-c-title" data-i18n="demo.mycomplaint3">Waterlogging near bus stop</div><span class="status-pill status-open" data-i18n="pill.open">◌ Open</span></div>
+    <div class="email-note">✉ <span data-i18n="panel.updatesto">Updates to</span> <span id="mycomplaints-panel-email">your email</span></div>
+  </div>
+  <div class="panel-card panel-card-guest" id="mycomplaints-panel-guest">
+    <div class="panel-label" data-i18n="panel.yourcomplaints">Your complaints</div>
+    <div class="guest-note" data-i18n="panel.guestnote">Sign in to track your own complaints and get status updates here.</div>
+    <button class="guest-signin-btn" onclick="nav('login')" data-i18n="top.signin">Sign in</button>
+  </div>
+  <div class="panel-card">
+    <div class="panel-label" data-i18n="panel.govtupdates">Govt updates</div>
+    <div class="govt-item"><div class="govt-title-s" data-i18n="demo.govt1.title">Trees trimmed, Aundh sector</div><div class="govt-meta">✓ <span data-i18n="demo.govt1.meta">Done · 2 days ago</span></div></div>
+    <div class="govt-item"><div class="govt-title-s" data-i18n="demo.govt2.title">Drain repair, Ward 12</div><div class="govt-meta">↻ <span data-i18n="demo.govt2.meta">In progress</span></div></div>
+    <div class="govt-item"><div class="govt-title-s" data-i18n="demo.govt3.title">Road patch, Baner Signal 4</div><div class="govt-meta">◌ <span data-i18n="demo.govt3.meta">Scheduled · next week</span></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: LANDING (marketing homepage — shown first)
+═══════════════════════════════════════════ -->
+<div class="page" id="page-landing" style="padding-top:52px;">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-pattern"></div>
+    <div class="hero-inner">
+      <div class="hero-badge">🇮🇳 <span data-i18n="land.hero.badge">Built for Indian cities &amp; villages</span></div>
+      <h1 class="hero-title"><span data-i18n="land.hero.title1">Your city listens</span><br><span data-i18n="land.hero.title2">when your voice is loud enough.</span></h1>
+      <p class="hero-sub" data-i18n="land.hero.sub">
+        NagarVaani is where citizens report civic problems — potholes, garbage, broken streetlights,
+        water shortages, corruption — and local government sees them ranked by AI, not by who
+        shouts loudest. Report in your own language. Track it till it's fixed.
+      </p>
+      <div class="hero-cta-row">
+        <button class="hero-btn hero-btn-primary" onclick="nav('submit')">📢 <span data-i18n="nav.report">Report an issue</span></button>
+        <button class="hero-btn hero-btn-outline" onclick="nav('home')">🧭 <span data-i18n="land.hero.cta.explore">Explore the feed</span></button>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="hero-stat-num">12,400+</div><div class="hero-stat-label" data-i18n="land.hero.stat.reported">Issues reported</div></div>
+        <div class="hero-stat"><div class="hero-stat-num">4,860</div><div class="hero-stat-label" data-i18n="stat.resolved">Resolved</div></div>
+        <div class="hero-stat"><div class="hero-stat-num">180+</div><div class="hero-stat-label" data-i18n="land.hero.stat.wards">Wards &amp; villages</div></div>
+        <div class="hero-stat"><div class="hero-stat-num">4</div><div class="hero-stat-label" data-i18n="land.hero.stat.langs">Languages</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUICK LINK CARDS -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title" data-i18n="land.ql.title">What do you want to do?</div>
+      <div class="section-sub" data-i18n="land.ql.sub">Everything on NagarVaani, one tap away</div>
+    </div>
+    <div class="quicklink-grid">
+      <div class="quicklink-card" onclick="nav('submit')">
+        <div class="ql-emoji">📢</div>
+        <div class="ql-label" data-i18n="nav.report">Report an issue</div>
+      </div>
+      <div class="quicklink-card" onclick="nav('nearme')">
+        <div class="ql-emoji">📍</div>
+        <div class="ql-label" data-i18n="land.ql.nearme">Issues near me</div>
+      </div>
+      <div class="quicklink-card" onclick="nav('trending')">
+        <div class="ql-emoji">🔥</div>
+        <div class="ql-label" data-i18n="nav.trending">Trending</div>
+      </div>
+      <div class="quicklink-card" onclick="nav('mycomplaints')">
+        <div class="ql-emoji">📋</div>
+        <div class="ql-label" data-i18n="nav.mycomplaints">My complaints</div>
+      </div>
+      <div class="quicklink-card" onclick="nav('corruption')">
+        <div class="ql-emoji">🕵️</div>
+        <div class="ql-label" data-i18n="nav.corruption">Report corruption</div>
+      </div>
+      <div class="quicklink-card" onclick="nav('govt')">
+        <div class="ql-emoji">🏛️</div>
+        <div class="ql-label" data-i18n="nav.govt">Govt dashboard</div>
+      </div>
+      <div class="quicklink-card" onclick="toggleLangMenu()">
+        <div class="ql-emoji">🌐</div>
+        <div class="ql-label" data-i18n="land.ql.changelang">Change language</div>
+      </div>
+      <div class="quicklink-card" onclick="nav('login')">
+        <div class="ql-emoji">👤</div>
+        <div class="ql-label" data-i18n="top.signin">Sign in</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="section section-alt">
+    <div class="section-head">
+      <div class="section-title" data-i18n="land.how.title">How NagarVaani works</div>
+      <div class="section-sub" data-i18n="land.how.sub">From complaint to closure, everyone sees the same status</div>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div class="step-emoji">🗣️</div>
+        <div class="step-title" data-i18n="land.step1.title">Speak or type your complaint</div>
+        <div class="step-text" data-i18n="land.step1.text">In Hindi, Marathi, Tamil or English — with a photo and your location.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div class="step-emoji">🤖</div>
+        <div class="step-title" data-i18n="land.step2.title">AI ranks it by real urgency</div>
+        <div class="step-text" data-i18n="land.step2.text">Health risk, monsoon danger and repeat reports push it up the queue — not just votes.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div class="step-emoji">🏛️</div>
+        <div class="step-title" data-i18n="land.step3.title">Officials act, publicly</div>
+        <div class="step-text" data-i18n="land.step3.text">Your ward's officials see it on their dashboard and update its status for everyone.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">4</div>
+        <div class="step-emoji">✅</div>
+        <div class="step-title" data-i18n="land.step4.title">You get notified when it's fixed</div>
+        <div class="step-text" data-i18n="land.step4.text">Track progress, add proof, and dispute a false "resolved" if the problem is still there.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section">
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-emoji">🗳️</div>
+        <div class="why-title" data-i18n="land.why1.title">One citizen, one loud voice</div>
+        <div class="why-text" data-i18n="land.why1.text">No more shouting into a WhatsApp group. Every complaint is public, timestamped and tracked.</div>
+      </div>
+      <div class="why-card">
+        <div class="why-emoji">🌐</div>
+        <div class="why-title" data-i18n="land.why2.title">Language is never a barrier</div>
+        <div class="why-text" data-i18n="land.why2.text">Speak in your mother tongue — NagarVaani translates for officials automatically.</div>
+      </div>
+      <div class="why-card">
+        <div class="why-emoji">🔎</div>
+        <div class="why-title" data-i18n="land.why3.title">Corruption, out in the open</div>
+        <div class="why-text" data-i18n="land.why3.text">A dedicated, careful channel to flag corruption — reviewed, never buried.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="landing-footer">
+    <div>NagarVaani — नगरवाणी · Your Voice, Your City</div>
+    <div class="landing-footer-links">
+      <span onclick="showToast('About page coming soon')" data-i18n="nav.about">About</span>
+      <span onclick="nav('govt')" data-i18n="land.footer.officials">For officials</span>
+      <span onclick="nav('login')" data-i18n="top.signin">Sign in</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: HOME
+═══════════════════════════════════════════ -->
+<div class="page three-panel" id="page-home">
+  <div class="center-feed">
+    <div class="feed-header">
+      <div>
+        <div class="feed-title" id="home-feed-title">Issues in your ward</div>
+        <div class="feed-subtitle" data-i18n="feed.home.sub">Your ward · complaints sorted by AI priority, not vote count</div>
+      </div>
+      <div class="sort-group">
+        <button class="sort-btn active" data-sort="priority" onclick="sortToggle(this)" data-i18n="sort.priority">Priority</button>
+        <button class="sort-btn" data-sort="votes" onclick="sortToggle(this)" data-i18n="sort.votes">Votes</button>
+        <button class="sort-btn" data-sort="recent" onclick="sortToggle(this)" data-i18n="sort.recent">Recent</button>
+      </div>
+    </div>
+
+    <div id="home-feed-list">
+    <div class="complaint-card critical-card" onclick="nav('detail')">
+      <div class="cc-row">
+        <div class="vote-col">
+          <button class="vote-up" onclick="event.stopPropagation();voteUp(this)">▲</button>
+          <div class="vote-count">3</div>
+          <div class="vote-label">votes</div>
+        </div>
+        <div class="cc-body">
+          <div class="cc-title">Overflowing storm drain flooding homes — Shivaji Nagar market lane</div>
+          <div class="cc-chips">
+            <span class="chip chip-type">Drainage</span>
+            <span class="chip chip-season">⚠ Monsoon risk</span>
+            <span class="chip chip-loc">Ward 12</span>
+            <span class="chip chip-linked">+7 linked areas</span>
+          </div>
+          <div class="cc-footer">
+            <div class="cc-actions">
+              <span class="cc-action" onclick="event.stopPropagation();nav('detail')">💬 12 comments</span>
+              <span class="cc-action">📸 2 photos</span>
+              <button class="same-btn" onclick="event.stopPropagation();showToast('Your area linked to this complaint')">Same issue in my area</button>
+            </div>
+            <div class="score-badge score-critical"><span>Score 94</span><span class="score-label">PRIORITY</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="complaint-card critical-card" onclick="nav('detail')">
+      <div class="cc-row">
+        <div class="vote-col">
+          <button class="vote-up" onclick="event.stopPropagation();voteUp(this)">▲</button>
+          <div class="vote-count">21</div>
+          <div class="vote-label">votes</div>
+        </div>
+        <div class="cc-body">
+          <div class="cc-title">Fallen tree blocking main road after last night's rain — Koregaon Park entrance</div>
+          <div class="cc-chips">
+            <span class="chip chip-type">Tree hazard</span>
+            <span class="chip chip-season">⚠ Post-rain</span>
+            <span class="chip chip-loc">Ward 8</span>
+          </div>
+          <div class="cc-footer">
+            <div class="cc-actions">
+              <span class="cc-action">💬 5 comments</span>
+              <span class="cc-action">📸 4 photos</span>
+              <button class="same-btn" onclick="event.stopPropagation();showToast('Your area linked to this complaint')">Same issue in my area</button>
+            </div>
+            <div class="score-badge score-critical"><span>Score 88</span><span class="score-label">PRIORITY</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="complaint-card" onclick="nav('detail')">
+      <div class="cc-row">
+        <div class="vote-col">
+          <button class="vote-up" onclick="event.stopPropagation();voteUp(this)">▲</button>
+          <div class="vote-count">104</div>
+          <div class="vote-label">votes</div>
+        </div>
+        <div class="cc-body">
+          <div class="cc-title">Large pothole on Baner Road near Signal 4 — tyre damage risk at night</div>
+          <div class="cc-chips">
+            <span class="chip chip-type">Road</span>
+            <span class="chip chip-loc">Ward 15</span>
+          </div>
+          <div class="cc-footer">
+            <div class="cc-actions">
+              <span class="cc-action">💬 34 comments</span>
+              <button class="same-btn" onclick="event.stopPropagation();showToast('Your area linked to this complaint')">Same issue in my area</button>
+            </div>
+            <div class="score-badge score-warn"><span>Score 61</span><span class="score-label">MODERATE</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="complaint-card critical-card" onclick="nav('detail')">
+      <div class="cc-row">
+        <div class="vote-col">
+          <button class="vote-up" onclick="event.stopPropagation();voteUp(this)">▲</button>
+          <div class="vote-count">1</div>
+          <div class="vote-label">votes</div>
+        </div>
+        <div class="cc-body">
+          <div class="cc-title">Village water supply contaminated — only source for 340 families, Uruli Kanchan</div>
+          <div class="cc-chips">
+            <span class="chip chip-type">Water supply</span>
+            <span class="chip chip-season">⚠ Health risk</span>
+            <span class="chip chip-loc">Uruli Kanchan</span>
+            <span class="chip chip-linked">+2 linked villages</span>
+          </div>
+          <div class="cc-footer">
+            <div class="cc-actions">
+              <span class="cc-action">💬 3 comments</span>
+              <button class="same-btn" onclick="event.stopPropagation();showToast('Your area linked')">Same issue in my area</button>
+            </div>
+            <div class="score-badge score-critical"><span>Score 91</span><span class="score-label">CRITICAL</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: TRENDING
+═══════════════════════════════════════════ -->
+<div class="page three-panel" id="page-trending">
+  <div class="center-feed">
+    <div class="trending-banner">
+      <div class="trending-banner-icon">🌐</div>
+      <div>
+        <div class="trending-banner-title"><span data-i18n="trending.title">Nationwide issues</span> <span class="solidarity-tag" data-i18n="trending.tag">Solidarity voting on</span></div>
+        <div class="trending-banner-sub" data-i18n="trending.sub">Vote for anyone's complaint — not just your ward. Your vote counts as a solidarity signal from outside the area.</div>
+      </div>
+    </div>
+    <div class="feed-header">
+      <div class="feed-title" data-i18n="trending.feed">Top issues across India right now</div>
+      <div class="sort-group">
+        <button class="sort-btn active" data-sort="priority" onclick="sortToggle(this)" data-i18n="sort.priority">Priority</button>
+        <button class="sort-btn" data-sort="votes" onclick="sortToggle(this)" data-i18n="sort.votes">Votes</button>
+        <button class="sort-btn" data-sort="recent" onclick="sortToggle(this)" data-i18n="sort.recent">Recent</button>
+      </div>
+    </div>
+
+    <div id="trending-feed-list">
+    <div class="complaint-card critical-card" onclick="nav('detail')">
+      <div class="cc-row">
+        <div class="vote-col">
+          <button class="vote-up" onclick="event.stopPropagation();voteUp(this)">▲</button>
+          <div class="vote-count">1</div>
+          <div class="vote-label">votes</div>
+        </div>
+        <div class="cc-body">
+          <div class="cc-title">Only well in Nakoda village poisoned — 280 families with no water source, Rajasthan</div>
+          <div class="cc-chips">
+            <span class="chip chip-type">Water supply</span>
+            <span class="chip chip-season">⚠ Health risk</span>
+            <span class="chip chip-loc">Barmer, Rajasthan</span>
+            <span class="chip chip-critical">1 vote · Score 96</span>
+          </div>
+          <div class="cc-footer">
+            <div class="cc-actions">
+              <span class="cc-action">💬 2 comments</span>
+              <button class="same-btn" onclick="event.stopPropagation();showToast('Solidarity vote added from Ward 12, Pune')">Vote in solidarity</button>
+            </div>
+            <div class="score-badge score-critical"><span>Score 96</span><span class="score-label">CRITICAL</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="complaint-card critical-card" onclick="nav('detail')">
+      <div class="cc-row">
+        <div class="vote-col">
+          <button class="vote-up" onclick="event.stopPropagation();voteUp(this)">▲</button>
+          <div class="vote-count">3</div>
+          <div class="vote-label">votes</div>
+        </div>
+        <div class="cc-body">
+          <div class="cc-title">Overflowing storm drain flooding homes — Shivaji Nagar, Pune</div>
+          <div class="cc-chips">
+            <span class="chip chip-type">Drainage</span>
+            <span class="chip chip-season">⚠ Monsoon risk</span>
+            <span class="chip chip-loc">Pune, Maharashtra</span>
+            <span class="chip chip-linked">+8 areas</span>
+          </div>
+          <div class="cc-footer">
+            <div class="cc-actions">
+              <span class="cc-action">💬 12 comments</span>
+              <button class="same-btn" onclick="event.stopPropagation();showToast('Solidarity vote added')">Vote in solidarity</button>
+            </div>
+            <div class="score-badge score-critical"><span>Score 94</span><span class="score-label">PRIORITY</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="complaint-card" onclick="nav('detail')">
+      <div class="cc-row">
+        <div class="vote-col">
+          <button class="vote-up" onclick="event.stopPropagation();voteUp(this)">▲</button>
+          <div class="vote-count">847</div>
+          <div class="vote-label">votes</div>
+        </div>
+        <div class="cc-body">
+          <div class="cc-title">Frequent power cuts lasting 8+ hours — affecting hospitals and schools, Vidarbha</div>
+          <div class="cc-chips">
+            <span class="chip chip-type">Electricity</span>
+            <span class="chip chip-season">⚠ Summer heatwave</span>
+            <span class="chip chip-loc">Amravati, Maharashtra</span>
+            <span class="chip chip-linked">+14 areas</span>
+          </div>
+          <div class="cc-footer">
+            <div class="cc-actions">
+              <span class="cc-action">💬 203 comments</span>
+              <button class="same-btn" onclick="event.stopPropagation();showToast('Solidarity vote added')">Vote in solidarity</button>
+            </div>
+            <div class="score-badge score-critical"><span>Score 89</span><span class="score-label">PRIORITY</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="complaint-card" onclick="nav('detail')">
+      <div class="cc-row">
+        <div class="vote-col">
+          <button class="vote-up" onclick="event.stopPropagation();voteUp(this)">▲</button>
+          <div class="vote-count">2341</div>
+          <div class="vote-label">votes</div>
+        </div>
+        <div class="cc-body">
+          <div class="cc-title">Main arterial road completely broken — commuters spending 2+ hours extra daily, Bengaluru</div>
+          <div class="cc-chips">
+            <span class="chip chip-type">Road</span>
+            <span class="chip chip-loc">Whitefield, Bengaluru</span>
+          </div>
+          <div class="cc-footer">
+            <div class="cc-actions">
+              <span class="cc-action">💬 891 comments</span>
+              <button class="same-btn" onclick="event.stopPropagation();showToast('Solidarity vote added')">Vote in solidarity</button>
+            </div>
+            <div class="score-badge score-warn"><span>Score 72</span><span class="score-label">MODERATE</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div style="background:var(--navy-subtle);border:1px solid #C5D0E6;border-radius:var(--radius-lg);padding:12px 16px;font-size:12px;color:var(--navy);margin-top:4px;">
+      ℹ Notice the Rajasthan village with 1 vote scores 96 — above Bengaluru's road complaint with 2,341 votes. Severity, not crowd size, decides priority.
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: NEAR ME
+═══════════════════════════════════════════ -->
+<div class="page three-panel" id="page-nearme">
+  <div class="center-feed nearme">
+    <div class="feed-header">
+      <div>
+        <div class="feed-title nearme-title" id="nearme-title"><span class="nearme-pin">📍</span> <span data-i18n="nearme.title">Issues near you</span></div>
+        <div class="feed-subtitle" id="nearme-subtitle" data-i18n="nearme.locating">Finding your location…</div>
+      </div>
+      <button class="nearme-refresh" onclick="refreshNearMe()" data-i18n="nearme.refresh">📍 Refresh location</button>
+    </div>
+
+    <div class="nearme-manual" id="nearme-manual" hidden>
+      <span data-i18n="nearme.denied">Location access was denied.</span>
+      <form onsubmit="event.preventDefault(); nearMeManual();" style="display:flex;gap:6px;flex:1;">
+        <input class="form-input" id="nearme-manual-input" placeholder="Enter your area or pin code" data-i18n-placeholder="nearme.enterarea" style="padding:7px 10px;font-size:13px;" />
+        <button class="nearme-go" type="submit" data-i18n="nearme.go">Go</button>
+      </form>
+    </div>
+
+    <div class="nearme-controls">
+      <div class="nearme-radius">
+        <span data-i18n="nearme.radius">Radius</span>
+        <div class="radius-group" id="nearme-radius-group">
+          <button class="radius-btn" data-km="1" onclick="setNearMeRadius(1, this)">1 km</button>
+          <button class="radius-btn active" data-km="3" onclick="setNearMeRadius(3, this)">3 km</button>
+          <button class="radius-btn" data-km="5" onclick="setNearMeRadius(5, this)">5 km</button>
+          <button class="radius-btn" data-km="10" onclick="setNearMeRadius(10, this)">10 km</button>
+        </div>
+      </div>
+      <div class="sort-group" id="nearme-sort-group">
+        <button class="sort-btn active" data-sort="distance" onclick="setNearMeSort('distance', this)" data-i18n="nearme.sortdistance">Distance</button>
+        <button class="sort-btn" data-sort="priority" onclick="setNearMeSort('priority', this)" data-i18n="sort.priority">Priority</button>
+      </div>
+    </div>
+
+    <div class="nearme-map" id="nearme-map"></div>
+    <div class="nearme-legend">● <span data-i18n="nearme.you">you</span> &nbsp; <span class="dot red"></span> ≥80 &nbsp; <span class="dot amber"></span> ≥55 &nbsp; <span class="dot green"></span> &lt;55</div>
+
+    <div id="nearme-feed-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: MY COMPLAINTS
+═══════════════════════════════════════════ -->
+<div class="page three-panel" id="page-mycomplaints">
+  <div class="center-feed">
+    <div class="feed-header">
+      <div>
+        <div class="feed-title" data-i18n="my.title">Your complaints</div>
+        <div class="feed-subtitle" id="my-subtitle"></div>
+      </div>
+    </div>
+    <div class="status-tabs" id="my-status-tabs">
+      <button class="status-tab active" data-status="" onclick="setMyStatusFilter('', this)" data-i18n="my.all">All</button>
+      <button class="status-tab" data-status="open" onclick="setMyStatusFilter('open', this)" data-i18n="my.open">Open</button>
+      <button class="status-tab" data-status="in_progress" onclick="setMyStatusFilter('in_progress', this)" data-i18n="my.inprogress">In progress</button>
+      <button class="status-tab" data-status="resolved" onclick="setMyStatusFilter('resolved', this)" data-i18n="my.resolved">Resolved</button>
+    </div>
+    <div id="mycomplaints-feed-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: DETAIL
+═══════════════════════════════════════════ -->
+<div class="page" id="page-detail">
+<div class="detail-shell">
+  <div class="detail-main">
+    <div class="back-link" onclick="history.back() || nav('home')">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      <span data-i18n="detail.back">Back to feed</span>
+    </div>
+    <div class="detail-hero critical">
+      <div class="detail-top-row">
+        <div class="detail-title-block">
+          <div class="detail-category-row" id="detail-chips">
+            <span class="chip chip-type">Drainage</span>
+            <span class="chip chip-season">⚠ Monsoon risk</span>
+            <span class="chip chip-loc">Ward 12 · Shivaji Nagar</span>
+            <span class="chip chip-critical">Safety risk</span>
+          </div>
+          <div class="detail-title" id="detail-title">Overflowing storm drain flooding homes — Shivaji Nagar market lane</div>
+          <div class="detail-meta-row" id="detail-meta">
+            <div class="detail-meta-item">🕐 Submitted 3 days ago</div>
+            <div class="detail-meta-item">👤 Ramesh K.</div>
+            <div class="detail-meta-item">📍 Shivaji Nagar, Pune</div>
+          </div>
+        </div>
+        <div class="score-panel">
+          <div class="score-num" id="detail-score-num">94</div>
+          <div class="score-label-text" data-i18n="detail.scorelabel">Priority score</div>
+          <div class="score-rank" id="detail-score-rank">#1 in Ward 12</div>
+        </div>
+      </div>
+      <div class="breakdown-card">
+        <div class="breakdown-title" id="breakdown-title">Why this scores 94 — AI score breakdown</div>
+        <div id="breakdown-rows">
+        <div class="breakdown-row">
+          <span class="breakdown-level lv1">L1</span>
+          <span class="breakdown-factor">Immediate safety risk detected</span>
+          <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:100%;background:var(--critical)"></div></div>
+          <span class="breakdown-value">+40</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="breakdown-level lv2">L2</span>
+          <span class="breakdown-factor">Monsoon × drainage (×2.0 multiplier)</span>
+          <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:90%;background:var(--warn)"></div></div>
+          <span class="breakdown-value">×2.0</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="breakdown-level lv3">L3</span>
+          <span class="breakdown-factor">Problem type: drainage (highest)</span>
+          <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:75%;background:var(--info)"></div></div>
+          <span class="breakdown-value">+25</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="breakdown-level lv5">L5</span>
+          <span class="breakdown-factor">8 districts linked (systemic pattern)</span>
+          <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:65%;background:var(--saffron-dark)"></div></div>
+          <span class="breakdown-value">+16</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="breakdown-level lv6">L6</span>
+          <span class="breakdown-factor">Vote count: 3 (weakest signal)</span>
+          <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:8%;background:var(--slate-light)"></div></div>
+          <span class="breakdown-value">+3</span>
+        </div>
+        </div>
+        <div class="breakdown-note" id="breakdown-note">Votes are the weakest signal — this complaint scores 94 because of safety risk + monsoon season + systemic pattern, not because many people voted.</div>
+      </div>
+      <div class="translate-bar">
+        <div class="translate-row">
+          <span>🇮🇳</span>
+          <span class="translate-text" id="translate-original-text">Original in Hindi — "नाली भर गई है, पानी घर में घुस रहा है"</span>
+          <button class="translate-btn" id="translate-btn" onclick="doTranslate()" data-i18n="detail.translate">Translate</button>
+        </div>
+        <div class="translate-result" id="translate-result" hidden>
+          <div class="translate-divider"></div>
+          <div class="translate-from" id="translate-from"></div>
+          <div class="translate-translated" id="translate-translated"></div>
+        </div>
+      </div>
+      <div class="action-bar">
+        <button class="action-btn primary" id="vote-btn" onclick="doVote()">▲ <span class="vote-count-big" id="vote-num">3</span> votes</button>
+        <button class="action-btn saffron-btn" onclick="doSameIssue()" data-i18n="detail.sameissue">📍 Same issue in my area</button>
+        <button class="action-btn outline" onclick="showToast('Link copied')" data-i18n="detail.share">🔗 Share</button>
+        <button class="action-btn outline" onclick="showToast('Flagged for review')" data-i18n="detail.flag">⚑ Flag</button>
+      </div>
+    </div>
+
+    <div class="gallery-section" id="gallery-section">
+      <div class="gallery-section-title" id="gallery-title">Photos & evidence — 3 files</div>
+      <div class="gallery-grid" id="gallery-grid">
+        <div class="gallery-item">
+          <div class="gallery-thumb" onclick="showToast('Full image view')">🌊<div class="gallery-360-badge">360°</div></div>
+          <div class="gallery-caption"><div class="gallery-caption-label">Caption</div>View from inside the lane — water at ankle height. Three ground-floor homes with waterlogged entrances visible.</div>
+        </div>
+        <div class="gallery-item">
+          <div class="gallery-thumb" onclick="showToast('Full image view')">🚰</div>
+          <div class="gallery-caption"><div class="gallery-caption-label">Caption</div>Blocked drain opening near market corner. Debris and plastic blocking the grate completely.</div>
+        </div>
+        <div class="gallery-item">
+          <div class="gallery-thumb" onclick="showToast('Full image view')">🏚️</div>
+          <div class="gallery-caption"><div class="gallery-caption-label">Caption</div>Kitchen of affected family — water entered through door gap. Unusable since Tuesday.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="linked-section">
+      <div class="linked-header">
+        <div class="linked-title" data-i18n="detail.linked">Areas reporting the same issue</div>
+        <div class="linked-badge" id="linked-badge">8 areas</div>
+      </div>
+      <div id="linked-items">
+      <div class="linked-item">
+        <div class="linked-item-left"><div class="linked-dot"></div><div><div class="linked-name">Katraj Ward</div><div class="linked-how">2 complaints · 3 days ago</div></div></div>
+        <span class="linked-tag btn-linked">Button linked</span>
+      </div>
+      <div class="linked-item">
+        <div class="linked-item-left"><div class="linked-dot"></div><div><div class="linked-name">Kothrud Ward 7</div><div class="linked-how">4 complaints · 1 day ago</div></div></div>
+        <span class="linked-tag btn-linked">Button linked</span>
+      </div>
+      <div class="linked-item">
+        <div class="linked-item-left"><div class="linked-dot"></div><div><div class="linked-name">Uruli Kanchan</div><div class="linked-how">Mentioned in comment · auto-detected</div></div></div>
+        <span class="linked-tag nlp">NLP detected</span>
+      </div>
+      <div class="linked-item">
+        <div class="linked-item-left"><div class="linked-dot"></div><div><div class="linked-name">Wadgaon Sheri</div><div class="linked-how">Mentioned in comment · auto-detected</div></div></div>
+        <span class="linked-tag nlp">NLP detected</span>
+      </div>
+      </div>
+      <div class="linked-nlp-note" data-i18n="detail.nlpnote">ℹ Areas tagged "NLP detected" were auto-linked when someone mentioned that place in a comment.</div>
+    </div>
+
+    <div class="gallery-section" id="related-section" style="display:none;">
+      <div class="gallery-section-title" data-i18n="detail.similar">Similar issues in your area</div>
+      <div id="related-similar" style="font-size:13px;color:var(--slate);"></div>
+      <div class="gallery-section-title" style="margin-top:16px;" data-i18n="detail.related">Related complaints — people also reported</div>
+      <div class="gallery-section-title" style="margin-top:-10px;font-weight:400;font-size:11px;color:var(--slate-light);">Same shape as market-basket recommendation, via linked-area overlap — associative-rule mining is the documented V2 direction</div>
+      <div id="related-cross" style="font-size:13px;color:var(--slate);margin-top:8px;"></div>
+    </div>
+
+    <div class="comments-section">
+      <div class="comments-title" id="comment-count-label">12 comments</div>
+      <div id="comments-list">
+      <div class="comment">
+        <div class="comment-avatar" style="background:var(--navy)">RK</div>
+        <div class="comment-bubble">
+          <div class="comment-top"><span class="comment-author">Ramesh K.</span><span class="comment-location-tag">Ward 12</span><span class="comment-time">3 days ago</span></div>
+          <div class="comment-text">The water has been entering our ground floor since Tuesday. Three families cannot use their kitchens. I've attached a 360° photo so you can see the full situation. Action needed before tonight's rain.</div>
+        </div>
+      </div>
+      <div class="comment">
+        <div class="comment-avatar" style="background:var(--success)">PM</div>
+        <div class="comment-bubble">
+          <div class="comment-top"><span class="comment-author">Priya M.</span><span class="comment-location-tag">Katraj</span><span class="comment-time">2 days ago</span></div>
+          <div class="comment-text">Same problem near the vegetable market in Katraj — main drain blocked with plastic. Already pressed "same issue in my area". This happens every monsoon.</div>
+        </div>
+      </div>
+      <div class="comment">
+        <div class="comment-avatar" style="background:var(--warn)">AJ</div>
+        <div class="comment-bubble">
+          <div class="comment-top"><span class="comment-author">Arjun J.</span><span class="comment-location-tag">Kothrud</span><span class="comment-time">1 day ago</span></div>
+          <div class="comment-text">The same drainage failure is happening in Uruli Kanchan and Wadgaon Sheri as well. This is a systemic NW Pune problem — permanent fix needed, not annual patching.</div>
+          <div class="comment-nlp-tag">🔍 AI detected "Uruli Kanchan" and "Wadgaon Sheri" → auto-linked</div>
+        </div>
+      </div>
+      <div class="comment">
+        <div class="comment-avatar" style="background:var(--info)">SK</div>
+        <div class="comment-bubble">
+          <div class="comment-top"><span class="comment-author">Sunita K.</span><span class="comment-location-tag">Mumbai · solidarity</span><span class="comment-time">18h ago</span></div>
+          <div class="comment-text">Saw this on Trending. Voting in solidarity from Mumbai — same happened in Dharavi in 2024. This needs national attention.</div>
+        </div>
+      </div>
+      </div>
+      <div class="comment-input-area">
+        <div class="comment-input-row">
+          <div class="comment-avatar" style="background:var(--saffron);color:var(--navy);flex-shrink:0">FT</div>
+          <textarea class="comment-textarea" placeholder="Add a comment or evidence… mention a place name and AI will auto-link it" data-i18n-placeholder="detail.commentph" id="comment-input" rows="2"></textarea>
+          <button class="comment-post-btn" onclick="postComment()" data-i18n="detail.post">Post</button>
+        </div>
+        <div class="comment-hint" data-i18n="detail.commenthint">ℹ Mention a place name (e.g. "same in Hadapsar") and AI will auto-link it to this complaint.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label" data-i18n="detail.status">Current status</div>
+      <div class="sidebar-card">
+        <div class="status-track" id="status-track">
+          <div class="status-step">
+            <div class="status-line-col"><div class="status-circle done">✓</div><div class="status-vline done"></div></div>
+            <div class="status-content"><div class="status-name">Submitted</div><div class="status-desc">3 days ago · Score 94</div></div>
+          </div>
+          <div class="status-step">
+            <div class="status-line-col"><div class="status-circle done">✓</div><div class="status-vline done"></div></div>
+            <div class="status-content"><div class="status-name">AI reviewed</div><div class="status-desc">Passed filter · drainage</div></div>
+          </div>
+          <div class="status-step">
+            <div class="status-line-col"><div class="status-circle active">↻</div><div class="status-vline"></div></div>
+            <div class="status-content"><div class="status-name">In progress</div><div class="status-desc">Repair team assigned</div></div>
+          </div>
+          <div class="status-step">
+            <div class="status-line-col"><div class="status-circle pending">◌</div></div>
+            <div class="status-content"><div class="status-name">Resolved</div><div class="status-desc">Pending</div></div>
+          </div>
+        </div>
+        <button class="action-btn outline" id="dispute-btn" style="width:100%;margin-top:12px;justify-content:center;font-size:12px;display:none;" onclick="doDispute()" data-i18n="detail.dispute">Dispute this resolution</button>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label" data-i18n="detail.stats">Stats</div>
+      <div class="sidebar-card">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div style="text-align:center;padding:10px;background:var(--bg);border-radius:var(--radius);"><div style="font-size:22px;font-weight:700;color:var(--critical)" id="sidebar-score">94</div><div style="font-size:10px;color:var(--slate);margin-top:2px;" data-i18n="detail.aiscore">AI score</div></div>
+          <div style="text-align:center;padding:10px;background:var(--bg);border-radius:var(--radius);"><div style="font-size:22px;font-weight:700;color:var(--text)" id="sidebar-votes">3</div><div style="font-size:10px;color:var(--slate);margin-top:2px;" data-i18n="detail.votes">Votes</div></div>
+          <div style="text-align:center;padding:10px;background:var(--bg);border-radius:var(--radius);"><div style="font-size:22px;font-weight:700;color:var(--saffron-dark)" id="sidebar-linked">8</div><div style="font-size:10px;color:var(--slate);margin-top:2px;" data-i18n="detail.areaslinked">Areas linked</div></div>
+          <div style="text-align:center;padding:10px;background:var(--bg);border-radius:var(--radius);"><div style="font-size:22px;font-weight:700;color:var(--info)" id="sidebar-comments">12</div><div style="font-size:10px;color:var(--slate);margin-top:2px;" data-i18n="detail.comments">Comments</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-section" id="govt-response-section">
+      <div class="sidebar-label" data-i18n="detail.govtresponse">Govt response</div>
+      <div class="sidebar-card">
+        <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px;" data-i18n="detail.wardoffice">Ward office</div>
+        <div style="font-size:12px;color:var(--text-soft);line-height:1.5;margin-bottom:8px;" id="govt-response-text">"Drain inspection team dispatched. Clearance begins Thursday morning."</div>
+      </div>
+    </div>
+    <div class="sidebar-section" id="infra-flag-section">
+      <div class="sidebar-label" data-i18n="detail.infraflag">Infrastructure flag</div>
+      <div class="sidebar-card" style="background:var(--saffron-light);border-color:var(--saffron);">
+        <div style="font-size:12px;font-weight:600;color:var(--saffron-dark);margin-bottom:4px;" data-i18n="detail.airec">AI-recommended action</div>
+        <div style="font-size:12px;color:var(--text-soft);line-height:1.5;" id="infra-flag-text">8 linked areas suggest systemic NW Pune gap. AI recommended ₹1.2–1.8 Cr project to district planners.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: SUBMIT
+═══════════════════════════════════════════ -->
+<div class="page" id="page-submit" style="padding-top:52px;">
+  <div class="submit-wrap">
+    <div class="back-link" onclick="nav('home')" style="margin-bottom:16px;display:inline-flex;align-items:center;gap:6px;color:var(--slate);cursor:pointer;" data-i18n="submit.back">← Back</div>
+    <div class="form-card">
+      <div style="font-size:17px;font-weight:600;margin-bottom:4px;" data-i18n="submit.title">Report an issue</div>
+      <div style="font-size:13px;color:var(--slate);margin-bottom:20px;" data-i18n="submit.sub">Write in any language — Hindi, Marathi, Tamil, English, whatever is easiest.</div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="submit.problem">What is the problem?</label>
+        <textarea class="form-textarea" placeholder="Describe what you see. Be specific — which road, lane, or landmark?" data-i18n-placeholder="submit.problemph" id="complaint-text"></textarea>
+        <div class="voice-row">
+          <button class="mic-btn" id="mic-btn" onclick="toggleRecording()">
+            <span class="mic-dot"></span>
+            <span id="mic-btn-label" data-i18n="submit.mic">🎤 Or record a voice note instead</span>
+          </button>
+          <span class="voice-status" id="voice-status"></span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="submit.category">Category</label>
+        <div class="category-grid">
+          <button class="cat-btn selected" data-cat="drainage" onclick="selectCat(this)"><span class="cat-icon">🌊</span><span data-i18n="cat.drainage">Drainage</span></button>
+          <button class="cat-btn" data-cat="road" onclick="selectCat(this)"><span class="cat-icon">🛣️</span><span data-i18n="cat.road">Road</span></button>
+          <button class="cat-btn" data-cat="garbage" onclick="selectCat(this)"><span class="cat-icon">🗑️</span><span data-i18n="cat.garbage">Garbage</span></button>
+          <button class="cat-btn" data-cat="electricity" onclick="selectCat(this)"><span class="cat-icon">💡</span><span data-i18n="cat.electricity">Electricity</span></button>
+          <button class="cat-btn" data-cat="tree_hazard" onclick="selectCat(this)"><span class="cat-icon">🌳</span><span data-i18n="cat.tree_hazard">Tree hazard</span></button>
+          <button class="cat-btn" data-cat="water_supply" onclick="selectCat(this)"><span class="cat-icon">💧</span><span data-i18n="cat.water_supply">Water supply</span></button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="submit.location">Location</label>
+        <input class="form-input" id="complaint-location" placeholder="Area, ward, or nearest landmark" data-i18n-placeholder="submit.locationph" />
+        <div class="voice-row" style="margin-top:8px;">
+          <button type="button" class="mic-btn" id="loc-btn" onclick="captureLocation()">
+            <span id="loc-btn-label" data-i18n="submit.uselocation">📍 Use my current location</span>
+          </button>
+          <span class="voice-status" id="loc-status"></span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label"><span data-i18n="submit.photos">Photos or 360° images</span> <span style="color:var(--slate-light);font-weight:400" data-i18n="submit.optional">(optional but very helpful)</span></label>
+        <input type="file" id="photo-input" accept="image/*" multiple hidden onchange="handlePhotoSelect(event)" />
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('photo-input').click()">
+          <div style="font-size:28px;margin-bottom:6px;">📎</div>
+          <div style="font-size:13px;color:var(--slate);" id="upload-zone-label" data-i18n="submit.tapadd">Tap to add photos or 360° images</div>
+          <div style="font-size:11px;color:var(--slate-light);margin-top:4px;" data-i18n="submit.captionhint">Each photo needs a caption so others understand what they're seeing</div>
+        </div>
+        <div id="photo-previews" style="display:flex;flex-direction:column;gap:10px;margin-top:12px;"></div>
+      </div>
+      <div class="ai-notice" data-i18n="submit.ainotice">ℹ Our AI will review your complaint before it goes live. Political or communal framing is rejected automatically — describe the infrastructure problem, not who you think is to blame.</div>
+      <div class="channel-banner" data-i18n="submit.telegram">💬 Don't want to fill a form? Message <b>@NagarVaaniBot</b> on Telegram — send text or a voice note in your own language and it's processed the same way.</div>
+      <button id="submit-btn" style="width:100%;background:var(--navy);color:white;border:none;border-radius:var(--radius);padding:12px;font-size:14px;font-weight:600;margin-top:16px;" onclick="submitComplaint()" data-i18n="submit.button">Submit complaint</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: CORRUPTION REPORT (separate from the civic feed)
+═══════════════════════════════════════════ -->
+<div class="page" id="page-corruption" style="padding-top:52px;">
+  <div class="corr-wrap">
+    <div class="corr-head">
+      <div class="corr-title" data-i18n="corr.title">Report corruption</div>
+      <div class="corr-note" data-i18n="corr.note">Corruption reports are moderated and forwarded to the relevant vigilance officer.</div>
+    </div>
+
+    <div class="corr-form">
+      <label class="form-label" data-i18n="corr.what">What happened?</label>
+      <textarea class="form-textarea" id="corr-text" data-i18n-placeholder="corr.placeholder" placeholder="Which office, what was demanded, for which service. Facts only — no names of communities or parties."></textarea>
+      <div class="corr-row">
+        <div class="form-group" style="flex:1;margin:0;">
+          <label class="form-label" data-i18n="corr.office">Office / location</label>
+          <input class="form-input" id="corr-location" data-i18n-placeholder="corr.officeph" placeholder="e.g. Ward 12 office, Shivaji Nagar" />
+        </div>
+      </div>
+      <label class="corr-anon">
+        <input type="checkbox" id="corr-anon" checked />
+        <span><b data-i18n="corr.anon">Submit anonymously</b> — <span data-i18n="corr.anonsub">your account will not be attached to this report, even if you are signed in.</span></span>
+      </label>
+      <div class="corr-filter-note" data-i18n="corr.filternote">ℹ Reports are reviewed by AI before they appear here. Describe the demand and the service — not who you think is behind it.</div>
+      <button class="corr-submit" id="corr-submit-btn" onclick="submitCorruption()" data-i18n="corr.submit">Submit report</button>
+    </div>
+
+    <div class="corr-feed-head">
+      <span data-i18n="corr.feedtitle">Reports filed</span>
+      <span class="corr-count" id="corr-count"></span>
+    </div>
+    <div id="corruption-feed-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: GOVT DASHBOARD
+═══════════════════════════════════════════ -->
+<div class="page" id="page-govt" style="padding-top:52px;">
+  <div class="govt-wrap">
+    <div class="govt-topstrip">
+      <div>
+        <div style="font-size:15px;font-weight:600;">Government Dashboard — Ward 12 · Pimpri-Chinchwad</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px;">AI-synthesized briefs · updated every 30 minutes</div>
+      </div>
+      <div class="govt-scope-toggle">
+        <button class="scope-btn active" id="scope-btn-ward" onclick="setGovtScope('ward')">Ward 12</button>
+        <button class="scope-btn" id="scope-btn-national" onclick="setGovtScope('national')">National</button>
+      </div>
+      <div style="margin-left:auto;font-size:12px;color:rgba(255,255,255,0.6)">Logged in as: <strong style="color:white">Official · Ward 12</strong></div>
+    </div>
+
+    <div class="govt-scope-view active" id="govt-view-ward">
+    <div class="govt-stats">
+      <div class="govt-stat"><div class="govt-stat-num" style="color:var(--critical)" id="govt-stat-critical">11</div><div class="govt-stat-label">Critical — needs action</div></div>
+      <div class="govt-stat"><div class="govt-stat-num" style="color:var(--warn)" id="govt-stat-inprogress">47</div><div class="govt-stat-label">In progress</div></div>
+      <div class="govt-stat"><div class="govt-stat-num" style="color:var(--success)" id="govt-stat-resolved">38</div><div class="govt-stat-label">Resolved this month</div></div>
+      <div class="govt-stat"><div class="govt-stat-num" id="govt-stat-open">3</div><div class="govt-stat-label">Open, total</div></div>
+    </div>
+    <div class="govt-grid">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--slate);margin-bottom:10px;">Priority briefs — sorted by AI score</div>
+        <div id="govt-briefs-list">
+        <div class="brief-card urgent">
+          <div class="brief-top">
+            <div class="brief-title">Storm drain overflow — Shivaji Nagar + 7 linked districts</div>
+            <div style="text-align:right;"><div class="brief-score">94</div><div class="brief-score-label">AI SCORE</div></div>
+          </div>
+          <div class="brief-summary">Drainage failure during monsoon across 8 areas. 340+ households affected. Risk of waterborne disease if unaddressed within 48 hours. Cross-district pattern suggests systemic infrastructure gap.</div>
+          <div class="brief-citizen-quote">"Paani ghar mein ghus raha hai — teen din se kitchen nahi use kar pa rahe" — Ramesh K., Ward 12</div>
+          <div class="brief-footer">
+            <div class="brief-action-btns">
+              <button class="b-btn primary" onclick="showToast('Status: In progress')">Mark in progress</button>
+              <button class="b-btn secondary" onclick="showToast('Flagged for investment review')">Flag for investment</button>
+              <button class="b-btn secondary" onclick="nav('detail')">View detail</button>
+            </div>
+          </div>
+        </div>
+        <div class="brief-card urgent">
+          <div class="brief-top">
+            <div class="brief-title">Contaminated water — Uruli Kanchan village</div>
+            <div style="text-align:right;"><div class="brief-score">91</div><div class="brief-score-label">AI SCORE</div></div>
+          </div>
+          <div class="brief-summary">Only water source for 340 families contaminated. 1 complaint filed (limited internet in village). Linked to 2 nearby villages. Immediate health risk — scores critical despite 1 vote.</div>
+          <div class="brief-citizen-quote">"Gavakrya saglyanna panyacha tras ahe" — Anonymous, Uruli Kanchan</div>
+          <div class="brief-footer">
+            <div class="brief-action-btns">
+              <button class="b-btn primary" onclick="showToast('Status: In progress')">Mark in progress</button>
+              <button class="b-btn secondary" onclick="showToast('Flagged for investment')">Flag for investment</button>
+            </div>
+          </div>
+        </div>
+        <div class="brief-card">
+          <div class="brief-top">
+            <div class="brief-title">Pothole cluster — Baner Road Signal 4</div>
+            <div style="text-align:right;"><div class="brief-score" style="color:var(--warn)">61</div><div class="brief-score-label">AI SCORE</div></div>
+          </div>
+          <div class="brief-summary">104 votes, moderate urgency. No safety risk, no seasonal amplifier. Lower priority than drainage despite high vote count. Schedule within 2 weeks.</div>
+          <div class="brief-citizen-quote">"Roz ek gaadi ka tyre kharab hota hai raat ko" — Multiple citizens</div>
+          <div class="brief-footer">
+            <div class="brief-action-btns">
+              <button class="b-btn primary" onclick="showToast('Scheduled for repair')">Schedule repair</button>
+              <button class="b-btn secondary">View comments</button>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+      <div>
+        <div class="hotspot-card" style="margin-bottom:12px;">
+          <div class="hotspot-label">Demand hotspot map — live clusters, sized by score</div>
+          <div class="hotspot-map" id="hotspot-map-ward"></div>
+        </div>
+        <div class="hotspot-card">
+          <div class="hotspot-label">Investment recommendations</div>
+          <div class="recommendation-item">
+            <div class="rec-title">NW Pune drainage upgrade</div>
+            <div class="rec-desc">8 complaint clusters in adjacent wards suggest a single infrastructure gap. Coordinated fix more effective than ward-by-ward patching.</div>
+            <div class="rec-cost">Estimated: ₹1.2–1.8 Cr</div>
+          </div>
+          <div class="recommendation-item">
+            <div class="rec-title">Rural water pipeline — 3 villages</div>
+            <div class="rec-desc">Uruli Kanchan + 2 linked villages share contaminated source. Permanent pipeline preferred over temporary supply.</div>
+            <div class="rec-cost">Estimated: ₹45–60 L</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <div class="govt-scope-view" id="govt-view-national">
+      <div class="govt-stats">
+        <div class="govt-stat"><div class="govt-stat-num" style="color:var(--critical)">63</div><div class="govt-stat-label">Critical nationwide</div></div>
+        <div class="govt-stat"><div class="govt-stat-num" style="color:var(--warn)">412</div><div class="govt-stat-label">Moderate priority</div></div>
+        <div class="govt-stat"><div class="govt-stat-num">9</div><div class="govt-stat-label">States with systemic patterns</div></div>
+        <div class="govt-stat"><div class="govt-stat-num" style="color:var(--info)">₹38 Cr</div><div class="govt-stat-label">Recommended investment, this quarter</div></div>
+      </div>
+      <div class="govt-grid">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--slate);margin-bottom:10px;">Demand hotspots by state <span class="country-chip">India · pilot</span></div>
+          <div class="brief-card">
+            <div class="national-row">
+              <div><div class="national-state">Maharashtra</div><div class="national-meta">Drainage + garbage clusters, 14 wards · monsoon amplifier active</div></div>
+              <div class="national-score" style="color:var(--critical)">92</div>
+            </div>
+            <div class="national-row">
+              <div><div class="national-state">Rajasthan</div><div class="national-meta">Water contamination, 6 villages · low-vote, high-severity pattern</div></div>
+              <div class="national-score" style="color:var(--critical)">96</div>
+            </div>
+            <div class="national-row">
+              <div><div class="national-state">Vidarbha (Maharashtra)</div><div class="national-meta">Electricity — heatwave amplifier, 14 linked areas</div></div>
+              <div class="national-score" style="color:var(--warn)">89</div>
+            </div>
+            <div class="national-row">
+              <div><div class="national-state">Karnataka</div><div class="national-meta">Road infrastructure — high vote count, low seasonal urgency</div></div>
+              <div class="national-score" style="color:var(--warn)">72</div>
+            </div>
+          </div>
+          <div style="background:var(--navy-subtle);border:1px solid #C5D0E6;border-radius:var(--radius-lg);padding:12px 16px;font-size:12px;color:var(--navy);margin-top:10px;">
+            ℹ Rajasthan's water crisis outranks Karnataka's road complaint despite far fewer citizen reports — same scoring logic as the ward view, rolled up nationally.
+          </div>
+        </div>
+        <div>
+          <div class="hotspot-card" style="margin-bottom:12px;">
+            <div class="hotspot-label">National demand hotspot map</div>
+            <div class="hotspot-map" id="hotspot-map-national"></div>
+          </div>
+          <div class="hotspot-card">
+            <div class="hotspot-label">Cross-state investment recommendations</div>
+            <div class="recommendation-item">
+              <div class="rec-title">Maharashtra monsoon drainage program</div>
+              <div class="rec-desc">14 wards, single systemic gap — coordinated state-level fix recommended over ward-by-ward patching.</div>
+              <div class="rec-cost">Estimated: ₹22–28 Cr</div>
+            </div>
+            <div class="recommendation-item">
+              <div class="rec-title">Rajasthan rural water security</div>
+              <div class="rec-desc">6 villages, shared contamination source pattern. Matches national demographic data for low-connectivity districts.</div>
+              <div class="rec-cost">Estimated: ₹8–10 Cr</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: LOGIN / SIGNUP
+═══════════════════════════════════════════ -->
+<div class="page" id="page-login">
+<div class="auth-shell">
+  <div class="auth-left">
+    <div class="auth-left-bg"></div>
+    <div class="auth-brand"><div class="auth-brand-dot"></div><div class="auth-brand-name">NagarVaani</div></div>
+    <div class="auth-headline">Your voice shapes<br><span>your city.</span></div>
+    <div class="auth-sub">A civic platform where every complaint — from a city of millions or a village of fifty — gets heard on merit, not on crowd size.</div>
+    <div class="auth-stat-row">
+      <div><div class="auth-stat-num">94</div><div class="auth-stat-label">Score · 3 votes</div></div>
+      <div><div class="auth-stat-num">61</div><div class="auth-stat-label">Score · 104 votes</div></div>
+      <div><div class="auth-stat-num">1</div><div class="auth-stat-label">Vote can be enough</div></div>
+    </div>
+    <div class="auth-quote">
+      <div class="auth-quote-text">"Paani ghar mein ghus raha hai — teen din se kitchen nahi use kar pa rahe."</div>
+      <div class="auth-quote-attr">Ramesh K. · Ward 12 · 3 votes · AI score: 94</div>
+    </div>
+  </div>
+  <div class="auth-right">
+    <div class="auth-form-wrap">
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab(this,'signin')" data-i18n="auth.signin">Sign in</button>
+        <button class="auth-tab" onclick="switchAuthTab(this,'signup')" data-i18n="auth.create">Create account</button>
+      </div>
+      <div id="form-signin">
+        <div class="form-heading" data-i18n="auth.welcome">Welcome back</div>
+        <div class="form-subheading" data-i18n="auth.welcomesub">Sign in to track your complaints and vote on issues.</div>
+        <div style="margin-bottom:16px;">
+          <div class="role-cards">
+            <div class="role-card selected" onclick="selectRole(this)"><div class="role-card-icon">🏘️</div><div class="role-card-title" data-i18n="auth.citizen">Citizen</div><div class="role-card-sub" data-i18n="auth.citizensub">Report & vote</div></div>
+            <div class="role-card" onclick="selectRole(this)"><div class="role-card-icon">🏛️</div><div class="role-card-title" data-i18n="auth.official">Official</div><div class="role-card-sub" data-i18n="auth.officialsub">Government access</div></div>
+          </div>
+        </div>
+        <div class="official-notice" id="official-notice" style="display:none;" data-i18n="auth.officialnotice">🔒 Government officials require a verified credential. Your login is audited and linked to your ward.</div>
+        <form id="signin-form" autocomplete="on" onsubmit="event.preventDefault(); doSignIn();">
+        <div class="form-group">
+          <label class="form-label" data-i18n="auth.email">Email</label>
+          <input class="form-input" type="email" name="email" autocomplete="email" placeholder="your@email.com" id="signin-email" />
+          <div class="form-error" id="email-error">Please enter a valid email</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="auth.password">Password</label>
+          <input class="form-input" type="password" name="current-password" autocomplete="current-password" placeholder="••••••••" id="signin-pass" />
+          <div class="form-error" id="pass-error">Password is required</div>
+        </div>
+        <button class="main-btn" type="submit">Sign in</button>
+        </form>
+        <div class="divider"><div class="divider-line"></div><div class="divider-text" data-i18n="auth.or">or</div><div class="divider-line"></div></div>
+        <div class="auth-footer"><span data-i18n="auth.noaccount">No account?</span> <a onclick="switchAuthTabByName('signup')" data-i18n="auth.createfree">Create one free</a> &nbsp;·&nbsp; <a onclick="showToast('Password reset email sent')" data-i18n="auth.forgot">Forgot password?</a></div>
+      </div>
+      <div id="form-signup-1" style="display:none;">
+        <div class="step-indicator">
+          <div class="step-dot active">1</div><div class="step-line"></div>
+          <div class="step-dot pending">2</div><div class="step-line"></div>
+          <div class="step-dot pending">3</div><div class="step-line"></div>
+          <div class="step-dot pending">4</div>
+        </div>
+        <div class="form-heading" data-i18n="auth.step1title">Create your account</div>
+        <div class="form-subheading" data-i18n="auth.step1sub">Who are you signing up as?</div>
+        <div class="role-cards" style="margin-bottom:20px;">
+          <div class="role-card selected" onclick="selectSignupRole(this)"><div class="role-card-icon">🏘️</div><div class="role-card-title" data-i18n="auth.citizen">Citizen</div><div class="role-card-sub" data-i18n="auth.citizensub2">Report, vote, track</div></div>
+          <div class="role-card" onclick="selectSignupRole(this)"><div class="role-card-icon">🏛️</div><div class="role-card-title" data-i18n="auth.official">Official</div><div class="role-card-sub" data-i18n="auth.officialsub2">Manage & resolve</div></div>
+        </div>
+        <div class="form-group" id="official-level-group" style="display:none;">
+          <label class="form-label" data-i18n="auth.level">Jurisdiction level</label>
+          <select class="form-input" id="signup-official-level">
+            <option value="ward_officer">Ward officer / local corporator — ward</option>
+            <option value="municipal">Municipal commissioner — city</option>
+            <option value="district">District collector — city/district</option>
+            <option value="state">MLA / state official — state</option>
+            <option value="central">Central ministry — nationwide</option>
+          </select>
+          <div class="form-hint">This sets your dashboard's default view. You can still explore and endorse issues nationwide regardless of level.</div>
+        </div>
+        <form id="signup-form-1" autocomplete="on" onsubmit="event.preventDefault(); goToStep(2);">
+        <div class="form-group"><label class="form-label" data-i18n="auth.fullname">Full name</label><input class="form-input" id="signup-name" name="name" autocomplete="name" placeholder="Your name" /></div>
+        <div class="form-group"><label class="form-label" data-i18n="auth.email">Email</label><input class="form-input" type="email" id="signup-email" name="email" autocomplete="email" placeholder="your@email.com" /></div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="auth.password">Password</label>
+          <input class="form-input" type="password" id="signup-pass" name="new-password" autocomplete="new-password" placeholder="8+ chars, upper, lower, digit, symbol" oninput="updatePasswordStrength(this.value)" />
+          <div class="pw-meter" id="pw-meter" hidden>
+            <div class="pw-bars"><span></span><span></span><span></span></div>
+            <div class="pw-meter-text"><span id="pw-strength-label"></span><span id="pw-strength-hint"></span></div>
+          </div>
+          <div class="form-error" id="signup-pass-error"></div>
+        </div>
+        <button class="main-btn" type="submit" data-i18n="auth.continue">Continue →</button>
+        </form>
+        <div class="auth-footer" style="margin-top:16px;"><span data-i18n="auth.haveaccount">Already have an account?</span> <a onclick="switchAuthTabByName('signin')" data-i18n="auth.signin">Sign in</a></div>
+      </div>
+      <div id="form-signup-2" style="display:none;">
+        <div class="step-indicator">
+          <div class="step-dot done">✓</div><div class="step-line done"></div>
+          <div class="step-dot active">2</div><div class="step-line"></div>
+          <div class="step-dot pending">3</div><div class="step-line"></div>
+          <div class="step-dot pending">4</div>
+        </div>
+        <div class="form-heading" data-i18n="auth.step2title">Where do you live?</div>
+        <div class="form-subheading" data-i18n="auth.step2sub">Your home feed shows your ward's complaints. You can still vote for anyone's issues in Trending.</div>
+        <div class="form-group"><label class="form-label" data-i18n="auth.state">State / Union Territory</label><select class="form-input" id="signup-state" name="address-level1" autocomplete="address-level1" onchange="onStateChange(this.value)"></select></div>
+        <div class="form-group"><label class="form-label" data-i18n="auth.city">City / District</label><input class="form-input" id="signup-city" name="address-level2" autocomplete="address-level2" list="district-list" placeholder="e.g. Pune, Mumbai, Nagpur" /><datalist id="district-list"></datalist><div class="form-hint" id="district-hint">Pick from the list or type your own.</div></div>
+        <div class="form-group"><label class="form-label" data-i18n="auth.area">Area / Locality</label><input class="form-input" id="signup-area" name="address-line1" autocomplete="address-line1" placeholder="e.g. Shivaji Nagar, Kothrud" /></div>
+        <div class="form-group"><label class="form-label"><span data-i18n="auth.ward">Ward number</span> <span style="color:var(--slate-light);font-weight:400" data-i18n="auth.optional">(optional)</span></label><input class="form-input" id="signup-ward" name="ward" autocomplete="off" placeholder="e.g. Ward 12" /><div class="form-hint" data-i18n="auth.wardhint">Don't know your ward? Enter your area and we'll match from government data.</div></div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="main-btn" style="background:var(--bg);color:var(--slate);border:1px solid var(--border);" onclick="goToStep(1)" data-i18n="auth.back">← Back</button>
+          <button class="main-btn" onclick="goToStep(3)" data-i18n="auth.continue">Continue →</button>
+        </div>
+      </div>
+      <div id="form-signup-3" style="display:none;">
+        <div class="step-indicator">
+          <div class="step-dot done">✓</div><div class="step-line done"></div>
+          <div class="step-dot done">✓</div><div class="step-line done"></div>
+          <div class="step-dot active">3</div><div class="step-line"></div>
+          <div class="step-dot pending">4</div>
+        </div>
+        <div class="form-heading" data-i18n="auth.step3title">Your preferences</div>
+        <div class="form-subheading" data-i18n="auth.step3sub">Choose your app language. You can post in any language regardless.</div>
+        <div class="lang-grid" style="margin-bottom:20px;">
+          <button class="lang-btn selected" data-lang="en" onclick="setLanguage('en')">English</button>
+          <button class="lang-btn" data-lang="hi" onclick="setLanguage('hi')">हिंदी</button>
+          <button class="lang-btn" data-lang="mr" onclick="setLanguage('mr')">मराठी</button>
+          <button class="lang-btn" data-lang="ta" onclick="setLanguage('ta')">தமிழ்</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-i18n="auth.notifications">Email notifications</label>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" checked /> <span data-i18n="auth.notif1">When my complaint status changes</span></label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" checked /> <span data-i18n="auth.notif2">When someone links to my complaint</span></label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;"><input type="checkbox" /> <span data-i18n="auth.notif3">Weekly ward digest</span></label>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="main-btn" style="background:var(--bg);color:var(--slate);border:1px solid var(--border);" onclick="goToStep(2)" data-i18n="auth.back">← Back</button>
+          <button class="main-btn saffron-fill" id="create-account-btn" onclick="completeSignup()" data-i18n="auth.create">Create account</button>
+        </div>
+      </div>
+      <div id="form-signup-4" style="display:none;">
+        <div class="step-indicator">
+          <div class="step-dot done">✓</div><div class="step-line done"></div>
+          <div class="step-dot done">✓</div><div class="step-line done"></div>
+          <div class="step-dot done">✓</div><div class="step-line done"></div>
+          <div class="step-dot active">4</div>
+        </div>
+        <div class="form-heading" data-i18n="auth.step4title">Check your email</div>
+        <div class="form-subheading"><span data-i18n="auth.otpsent">Enter the 6-digit OTP sent to</span> <b id="otp-email-label">your@email.com</b></div>
+        <form id="otp-form" onsubmit="event.preventDefault(); verifyOtp();">
+          <div class="otp-row" id="otp-row">
+            <input class="otp-box" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="one-time-code" oninput="otpInput(event, 0)" onkeydown="otpKeydown(event, 0)" onpaste="otpPaste(event)" />
+            <input class="otp-box" inputmode="numeric" pattern="[0-9]*" maxlength="1" oninput="otpInput(event, 1)" onkeydown="otpKeydown(event, 1)" onpaste="otpPaste(event)" />
+            <input class="otp-box" inputmode="numeric" pattern="[0-9]*" maxlength="1" oninput="otpInput(event, 2)" onkeydown="otpKeydown(event, 2)" onpaste="otpPaste(event)" />
+            <input class="otp-box" inputmode="numeric" pattern="[0-9]*" maxlength="1" oninput="otpInput(event, 3)" onkeydown="otpKeydown(event, 3)" onpaste="otpPaste(event)" />
+            <input class="otp-box" inputmode="numeric" pattern="[0-9]*" maxlength="1" oninput="otpInput(event, 4)" onkeydown="otpKeydown(event, 4)" onpaste="otpPaste(event)" />
+            <input class="otp-box" inputmode="numeric" pattern="[0-9]*" maxlength="1" oninput="otpInput(event, 5)" onkeydown="otpKeydown(event, 5)" onpaste="otpPaste(event)" />
+          </div>
+          <div class="form-error" id="otp-error"></div>
+          <button class="main-btn saffron-fill" type="submit" id="otp-verify-btn" data-i18n="auth.verify">Verify &amp; sign in</button>
+        </form>
+        <div class="auth-footer">
+          <span data-i18n="auth.didntget">Didn't get it?</span> <a id="otp-resend-link" onclick="resendOtp()" data-i18n="auth.resend">Resend code</a>
+          <span id="otp-resend-timer" style="color:var(--slate-light);"></span>
+        </div>
+        <div class="form-hint" style="text-align:center;margin-top:12px;" data-i18n="auth.otphint">Running locally without SMTP? The code is printed in the uvicorn terminal.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     OFFICIAL SHELL — entirely separate DOM tree from the citizen app.
+     Shown by switchToOfficialMode() (js/official.js); all classes .off-*
+═══════════════════════════════════════════ -->
+<div id="official-shell" hidden>
+  <div class="off-topbar" id="off-topbar">
+    <div class="off-brand">🏛️ <span>NagarVaani</span> Official Portal</div>
+    <div class="off-identity">
+      <span class="off-user" id="off-user-name">Official</span>
+      <span class="off-sep">·</span>
+      <span id="off-user-level">Ward officer</span>
+      <span class="off-sep">·</span>
+      <span class="off-jurisdiction" id="off-user-jurisdiction">…</span>
+    </div>
+    <div class="off-topbar-right">
+      <a class="off-link" onclick="switchToCitizenMode('home')">← Citizen view</a>
+      <button class="off-logout" onclick="offLogout()">Log out</button>
+    </div>
+  </div>
+  <div class="off-sidebar" id="off-sidebar">
+    <div class="off-sidebar-label">Official View</div>
+    <div class="off-nav-item active" data-view="queue" onclick="setOfficialView('queue')">
+      <span class="off-nav-dot">●</span> My Queue
+      <span class="off-pulse" id="off-pulse" hidden></span>
+      <span class="off-badge red" id="off-badge-critical" hidden></span>
+    </div>
+    <div class="off-nav-item" data-view="all" onclick="setOfficialView('all')">
+      <span class="off-nav-dot">○</span> All Complaints
+      <span class="off-badge" id="off-badge-open" hidden></span>
+    </div>
+    <div class="off-nav-item" data-view="map" onclick="setOfficialView('map')">
+      <span class="off-nav-dot">○</span> Hotspot Map
+    </div>
+    <div class="off-nav-item" data-view="flags" onclick="setOfficialView('flags')">
+      <span class="off-nav-dot">○</span> Investment Flags
+      <span class="off-badge amber" id="off-badge-flags" hidden></span>
+    </div>
+    <div class="off-nav-item" data-view="resolved" onclick="setOfficialView('resolved')">
+      <span class="off-nav-dot">○</span> Resolved
+      <span class="off-badge green" id="off-badge-resolved" hidden></span>
+    </div>
+    <div class="off-sidebar-foot">🏛️ Scores reflect severity, season and pattern — not vote count.</div>
+  </div>
+  <div class="off-main" id="off-main"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════════════════════════════
+     INDIA STATES + DISTRICTS (classic script: plain globals so inline
+     onchange="" handlers and the ES modules can both reach them)
+═══════════════════════════════════════════ -->
+<script>
+// 28 states + 8 union territories.
+const INDIA_STATES = [
+  "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa","Gujarat","Haryana",
+  "Himachal Pradesh","Jharkhand","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur",
+  "Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana",
+  "Tripura","Uttar Pradesh","Uttarakhand","West Bengal",
+  // Union territories
+  "Andaman and Nicobar Islands","Chandigarh","Dadra and Nagar Haveli and Daman and Diu","Delhi",
+  "Jammu and Kashmir","Ladakh","Lakshadweep","Puducherry",
+];
+const INDIA_UNION_TERRITORIES = new Set(INDIA_STATES.slice(28));
+
+// Major districts per state (8+ each). Small UTs list every district they have;
+// Goa (2 districts) and Lakshadweep (1) also list their talukas / islands so the
+// dropdown is still useful there.
+const INDIA_DISTRICTS = {
+  "Andhra Pradesh": ["Visakhapatnam","NTR (Vijayawada)","Guntur","Nellore","Kurnool","Kakinada","Tirupati","Anantapur","Krishna","Chittoor","East Godavari","Prakasam"],
+  "Arunachal Pradesh": ["Papum Pare","East Siang","West Siang","Lower Subansiri","Tawang","Changlang","Lohit","Tirap","West Kameng","Upper Siang"],
+  "Assam": ["Kamrup Metropolitan","Kamrup","Dibrugarh","Jorhat","Nagaon","Cachar","Sonitpur","Tinsukia","Barpeta","Dhubri","Sivasagar","Lakhimpur"],
+  "Bihar": ["Patna","Gaya","Muzaffarpur","Bhagalpur","Darbhanga","Purnia","Nalanda","Rohtas","Saran","Begusarai","Vaishali","Madhubani"],
+  "Chhattisgarh": ["Raipur","Bilaspur","Durg","Rajnandgaon","Korba","Raigarh","Bastar","Surguja","Janjgir-Champa","Dhamtari","Mahasamund","Kanker"],
+  "Goa": ["North Goa","South Goa","Tiswadi","Bardez","Salcete","Mormugao","Ponda","Pernem","Bicholim","Quepem"],
+  "Gujarat": ["Ahmedabad","Surat","Vadodara","Rajkot","Bhavnagar","Jamnagar","Gandhinagar","Junagadh","Kutch","Anand","Mehsana","Bharuch"],
+  "Haryana": ["Gurugram","Faridabad","Hisar","Panipat","Karnal","Ambala","Rohtak","Sonipat","Yamunanagar","Panchkula","Sirsa","Bhiwani"],
+  "Himachal Pradesh": ["Shimla","Kangra","Mandi","Solan","Kullu","Una","Hamirpur","Bilaspur","Chamba","Sirmaur","Kinnaur","Lahaul and Spiti"],
+  "Jharkhand": ["Ranchi","Dhanbad","East Singhbhum","Bokaro","Hazaribagh","Deoghar","Giridih","Palamu","West Singhbhum","Dumka","Ramgarh","Godda"],
+  "Karnataka": ["Bengaluru Urban","Bengaluru Rural","Mysuru","Dakshina Kannada","Dharwad","Belagavi","Kalaburagi","Shivamogga","Tumakuru","Ballari","Udupi","Vijayapura"],
+  "Kerala": ["Thiruvananthapuram","Ernakulam","Kozhikode","Thrissur","Kollam","Kannur","Alappuzha","Palakkad","Malappuram","Kottayam","Pathanamthitta","Idukki","Wayanad","Kasaragod"],
+  "Madhya Pradesh": ["Bhopal","Indore","Jabalpur","Gwalior","Ujjain","Sagar","Rewa","Satna","Dewas","Ratlam","Chhindwara","Khandwa"],
+  "Maharashtra": ["Pune","Mumbai City","Mumbai Suburban","Nagpur","Thane","Nashik","Chhatrapati Sambhajinagar","Solapur","Kolhapur","Amravati","Nanded","Sangli","Satara","Ahmednagar","Raigad","Palghar"],
+  "Manipur": ["Imphal West","Imphal East","Thoubal","Bishnupur","Churachandpur","Ukhrul","Senapati","Chandel","Tamenglong","Kakching"],
+  "Meghalaya": ["East Khasi Hills","West Garo Hills","West Jaintia Hills","Ri Bhoi","East Garo Hills","West Khasi Hills","South West Garo Hills","East Jaintia Hills","North Garo Hills","South Garo Hills"],
+  "Mizoram": ["Aizawl","Lunglei","Champhai","Kolasib","Serchhip","Lawngtlai","Mamit","Siaha","Khawzawl","Saitual","Hnahthial"],
+  "Nagaland": ["Kohima","Dimapur","Mokokchung","Tuensang","Wokha","Mon","Zunheboto","Phek","Peren","Kiphire","Longleng","Chümoukedima"],
+  "Odisha": ["Khordha","Cuttack","Ganjam","Sundargarh","Sambalpur","Puri","Balasore","Mayurbhanj","Koraput","Angul","Bhadrak","Kalahandi"],
+  "Punjab": ["Ludhiana","Amritsar","Jalandhar","Patiala","Bathinda","SAS Nagar (Mohali)","Hoshiarpur","Gurdaspur","Sangrur","Moga","Pathankot","Ferozepur"],
+  "Rajasthan": ["Jaipur","Jodhpur","Udaipur","Kota","Ajmer","Bikaner","Alwar","Bharatpur","Barmer","Sikar","Jaisalmer","Sri Ganganagar"],
+  "Sikkim": ["Gangtok","Namchi","Gyalshing","Mangan","Pakyong","Soreng"],
+  "Tamil Nadu": ["Chennai","Coimbatore","Madurai","Tiruchirappalli","Salem","Tirunelveli","Erode","Vellore","Thoothukudi","Thanjavur","Kanchipuram","Tiruppur","Dindigul","Cuddalore"],
+  "Telangana": ["Hyderabad","Rangareddy","Medchal-Malkajgiri","Warangal","Karimnagar","Nizamabad","Khammam","Nalgonda","Mahbubnagar","Sangareddy","Adilabad","Suryapet"],
+  "Tripura": ["West Tripura","South Tripura","North Tripura","Dhalai","Khowai","Gomati","Sepahijala","Unakoti"],
+  "Uttar Pradesh": ["Lucknow","Kanpur Nagar","Varanasi","Prayagraj","Agra","Ghaziabad","Gautam Buddha Nagar","Meerut","Gorakhpur","Bareilly","Aligarh","Moradabad","Jhansi","Ayodhya"],
+  "Uttarakhand": ["Dehradun","Haridwar","Nainital","Udham Singh Nagar","Almora","Pauri Garhwal","Tehri Garhwal","Pithoragarh","Chamoli","Rudraprayag","Uttarkashi","Champawat","Bageshwar"],
+  "West Bengal": ["Kolkata","Howrah","North 24 Parganas","South 24 Parganas","Hooghly","Darjeeling","Nadia","Murshidabad","Paschim Bardhaman","Purba Bardhaman","Malda","Jalpaiguri","Paschim Medinipur"],
+  "Andaman and Nicobar Islands": ["South Andaman","North and Middle Andaman","Nicobar"],
+  "Chandigarh": ["Chandigarh"],
+  "Dadra and Nagar Haveli and Daman and Diu": ["Dadra and Nagar Haveli","Daman","Diu"],
+  "Delhi": ["New Delhi","Central Delhi","North Delhi","South Delhi","East Delhi","West Delhi","North East Delhi","North West Delhi","South East Delhi","South West Delhi","Shahdara"],
+  "Jammu and Kashmir": ["Srinagar","Jammu","Anantnag","Baramulla","Udhampur","Kathua","Pulwama","Kupwara","Rajouri","Poonch","Budgam","Samba"],
+  "Ladakh": ["Leh","Kargil","Zanskar","Drass","Sham","Nubra","Changthang"],
+  "Lakshadweep": ["Lakshadweep","Kavaratti","Agatti","Minicoy","Amini","Andrott"],
+  "Puducherry": ["Puducherry","Karaikal","Mahe","Yanam"],
+};
+
+function populateStates(defaultState = "Maharashtra") {
+  const sel = document.getElementById('signup-state');
+  if (!sel || sel.options.length) return;
+  const mk = (label) => { const o = document.createElement('option'); o.value = label; o.textContent = label; return o; };
+  const states = document.createElement('optgroup'); states.label = 'States';
+  const uts = document.createElement('optgroup'); uts.label = 'Union territories';
+  INDIA_STATES.forEach(name => (INDIA_UNION_TERRITORIES.has(name) ? uts : states).appendChild(mk(name)));
+  sel.appendChild(states); sel.appendChild(uts);
+  sel.value = defaultState;
+  onStateChange(defaultState);
+}
+
+function onStateChange(state) {
+  const list = document.getElementById('district-list');
+  const city = document.getElementById('signup-city');
+  const hint = document.getElementById('district-hint');
+  const districts = INDIA_DISTRICTS[state] || [];
+  list.innerHTML = districts.map(d => `<option value="${d}"></option>`).join('');
+  city.placeholder = districts.length ? `e.g. ${districts.slice(0, 3).join(', ')}` : 'City or district';
+  hint.textContent = districts.length
+    ? `${districts.length} districts of ${state} listed — pick one or type your own.`
+    : 'Type your city or district.';
+  if (city.value && !districts.includes(city.value)) city.value = '';
+}
+
+populateStates();
+</script>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

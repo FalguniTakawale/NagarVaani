@@ -1,0 +1,20 @@
+# Secrets — never commit
+.env
+Backend/.env
+
+# Python
+.venv/
+Backend/.venv/
+__pycache__/
+*.pyc
+
+# Stray local debug output, not part of the app
+/Backend/0
+
+# Local SQLite databases
+*.db
+*.db-journal
+
+# OS / editor
+.DS_Store
+*.bak

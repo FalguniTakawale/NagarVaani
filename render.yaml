@@ -1,0 +1,40 @@
+# Render Blueprint — one web service (API + static frontend) and one Postgres.
+# In the Render dashboard: New → Blueprint → point at this repo.
+# Secrets marked sync: false are entered once in the dashboard, never committed.
+services:
+  - type: web
+    name: nagarvaani
+    runtime: python
+    rootDir: Backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python setup_db.py && uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: FRONTEND_URL
+        value: https://nagarvaani.onrender.com   # change to your service URL
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nagarvaani-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
+
+databases:
+  - name: nagarvaani-db
+    plan: free
