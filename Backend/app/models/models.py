@@ -91,6 +91,17 @@ class EmailVerification(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+# ── PASSWORD RESET (forgot-password OTP) ──────────────
+class PasswordReset(Base):
+    __tablename__ = "password_resets"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    otp_hash = Column(String, nullable=False)   # bcrypt of the 6-digit code — never the code itself
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 # ── DISTRICT / AREA ───────────────────────────────────
 class District(Base):
     __tablename__ = "districts"

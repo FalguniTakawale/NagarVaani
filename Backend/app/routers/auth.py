@@ -5,14 +5,15 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.models import EmailVerification, User
+from app.models.models import EmailVerification, PasswordReset, User
 from app.schemas.schemas import (
-    RegisterOut, ResendOtpRequest, TokenOut, UserCreate, UserLogin, VerifyEmailRequest,
+    ForgotPasswordRequest, RegisterOut, ResendOtpRequest, ResetPasswordRequest,
+    TokenOut, UserCreate, UserLogin, VerifyEmailRequest,
 )
 from app.services.auth import (
     create_access_token, generate_otp, hash_password, validate_password, verify_password,
 )
-from app.services.email import send_otp_email, send_welcome_email
+from app.services.email import send_otp_email, send_password_reset_email, send_welcome_email
 from app.services.rate_limit import check_rate_limit, seconds_until_reset
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -20,6 +21,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 OTP_TTL = timedelta(minutes=15)
 RESEND_LIMIT = 3
 RESEND_WINDOW = 60 * 60
+RESET_LIMIT = 3
+RESET_WINDOW = 60 * 60
 
 UNVERIFIED_MSG = "Please verify your email. Check your inbox for the OTP."
 
@@ -140,3 +143,59 @@ async def login(payload: UserLogin, db: AsyncSession = Depends(get_db)):
         )
 
     return _token_out(user)
+
+
+@router.post("/forgot-password")
+async def forgot_password(payload: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
+    """Always responds the same way regardless of whether the email is
+    registered — same non-enumeration pattern as resend-otp."""
+    key = payload.email.lower()
+    if not check_rate_limit("forgot_password", key, RESET_LIMIT, RESET_WINDOW):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many reset requests — try again later",
+            headers={"Retry-After": str(seconds_until_reset("forgot_password", key, RESET_WINDOW))},
+        )
+
+    user = (await db.execute(select(User).where(User.email == payload.email))).scalar_one_or_none()
+    if user:
+        await db.execute(delete(PasswordReset).where(PasswordReset.user_id == user.id))
+        otp = generate_otp()
+        db.add(PasswordReset(
+            user_id=user.id,
+            otp_hash=hash_password(otp),
+            expires_at=datetime.now(timezone.utc) + OTP_TTL,
+        ))
+        await db.flush()
+        await send_password_reset_email(user.email, user.name, otp)
+
+    return {"message": "If that email has an account, a reset code has been sent"}
+
+
+@router.post("/reset-password", response_model=TokenOut)
+async def reset_password(payload: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+    if error := validate_password(payload.new_password):
+        raise HTTPException(status_code=400, detail=error)
+
+    user = (await db.execute(select(User).where(User.email == payload.email))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=400, detail="Incorrect code")  # don't reveal the email doesn't exist
+
+    record = (await db.execute(
+        select(PasswordReset)
+        .where(PasswordReset.user_id == user.id)
+        .order_by(PasswordReset.created_at.desc())
+    )).scalars().first()
+    if not record:
+        raise HTTPException(status_code=400, detail="No reset code on file — request a new one")
+
+    expires_at = record.expires_at if record.expires_at.tzinfo else record.expires_at.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) > expires_at:
+        raise HTTPException(status_code=400, detail="That code has expired — request a new one")
+    if not verify_password(payload.otp.strip(), record.otp_hash):
+        raise HTTPException(status_code=400, detail="Incorrect code")
+
+    user.hashed_password = hash_password(payload.new_password)
+    await db.execute(delete(PasswordReset).where(PasswordReset.user_id == user.id))
+    await db.flush()
+    return _token_out(user)  # log them straight in, same as verify-email does

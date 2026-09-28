@@ -24,6 +24,7 @@ import {
 import {
   switchAuthTab, switchAuthTabByName, selectRole, selectSignupRole,
   goToStep, doSignIn, completeSignup,
+  showForgotPassword, backToSignIn, sendResetCode, submitResetPassword,
   updatePasswordStrength, otpInput, otpKeydown, otpPaste, verifyOtp, resendOtp,
 } from './auth.js';
 
@@ -56,6 +57,7 @@ Object.assign(window, {
   loadHotspotMapFull, setOffMapScope, loadInvestmentFlags,
   switchAuthTab, switchAuthTabByName, selectRole, selectSignupRole,
   goToStep, doSignIn, completeSignup,
+  showForgotPassword, backToSignIn, sendResetCode, submitResetPassword,
   updatePasswordStrength, otpInput, otpKeydown, otpPaste, verifyOtp, resendOtp,
   applyLanguage, setLanguage, toggleLangMenu,
   showToast,

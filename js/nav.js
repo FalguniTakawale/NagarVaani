@@ -4,14 +4,14 @@ import { loadGovtDashboard, initGovtMaps } from './govt.js';
 import { loadNearMe } from './nearme.js';
 import { loadCorruptionFeed } from './corruption.js';
 
-export const feedPages = ['home', 'trending', 'nearme', 'mycomplaints'];
+export const feedPages = ['home', 'trending', 'nearme', 'mycomplaints', 'myvotes'];
 
 // The wrapper div for each page carries its real layout mode (three-panel
 // pages must stay flex; everything else lays itself out via an inner child).
 const pageDisplay = {
-  home: 'flex', trending: 'flex', nearme: 'flex', mycomplaints: 'flex',
+  home: 'flex', trending: 'flex', nearme: 'flex', mycomplaints: 'flex', myvotes: 'flex',
   detail: 'block', submit: 'block', govt: 'block', login: 'block', corruption: 'block',
-  landing: 'block',
+  landing: 'block', about: 'block',
 };
 
 export let currentComplaintId = null;

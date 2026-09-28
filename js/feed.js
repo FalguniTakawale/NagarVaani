@@ -103,15 +103,17 @@ function startMyComplaintsPolling() {
 }
 
 export async function loadFeed(page, { silent = false } = {}) {
-  const listMap = { home: 'home-feed-list', trending: 'trending-feed-list', nearme: 'nearme-feed-list', mycomplaints: 'mycomplaints-feed-list' };
-  const scopeMap = { home: 'ward', trending: 'trending', nearme: 'nearby', mycomplaints: 'mine' };
+  const listMap = { home: 'home-feed-list', trending: 'trending-feed-list', nearme: 'nearme-feed-list', mycomplaints: 'mycomplaints-feed-list', myvotes: 'myvotes-feed-list' };
+  const scopeMap = { home: 'ward', trending: 'trending', nearme: 'nearby', mycomplaints: 'mine', myvotes: 'voted' };
+  const subtitleMap = { mycomplaints: 'my-subtitle', myvotes: 'myvotes-subtitle' };
   const container = document.getElementById(listMap[page]);
   const scope = scopeMap[page];
   if (!container) return;
 
-  if (scope === 'mine' && !authToken) {
+  if ((scope === 'mine' || scope === 'voted') && !authToken) {
     container.innerHTML = `<div style="padding:24px;text-align:center;color:var(--slate);font-size:13px;">${t('js.mylogin')} <a style="color:var(--navy);cursor:pointer;" onclick="nav('login')">${t('js.signin')}</a></div>`;
-    document.getElementById('my-subtitle').textContent = '';
+    const subtitleEl = document.getElementById(subtitleMap[page]);
+    if (subtitleEl) subtitleEl.textContent = '';
     return;
   }
 
@@ -128,6 +130,15 @@ export async function loadFeed(page, { silent = false } = {}) {
       after: (items) => { document.getElementById('my-subtitle').textContent = t('my.count', { n: items.length }); },
     });
     startMyComplaintsPolling();
+    return;
+  }
+  if (scope === 'voted') {
+    params.set('per_page', '50');
+    if (!silent) container.innerHTML = loadingPlaceholder();
+    await fetchAndRenderFeed(container, params, {
+      empty: `<div style="padding:32px;text-align:center;color:var(--slate);font-size:13px;">${t('myvotes.empty')}</div>`,
+      after: (items) => { document.getElementById('myvotes-subtitle').textContent = t('myvotes.count', { n: items.length }); },
+    });
     return;
   }
   if (page === 'home') {

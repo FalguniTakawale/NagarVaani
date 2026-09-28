@@ -135,7 +135,7 @@ async def submit_complaint(
 # ── LIST COMPLAINTS ───────────────────────────────────────────────────────────
 @router.get("", response_model=List[dict])
 async def list_complaints(
-    scope: str = Query("ward", description="ward | trending | nearby | mine | jurisdiction | corruption"),
+    scope: str = Query("ward", description="ward | trending | nearby | mine | voted | jurisdiction | corruption"),
     ward: Optional[str] = Query(None),
     city: Optional[str] = Query(None),
     state: Optional[str] = Query(None),
@@ -191,6 +191,11 @@ async def list_complaints(
         if not current_user:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required to view your complaints")
         q = q.where(Complaint.author_id == current_user.id)
+    elif scope == "voted":
+        if not current_user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required to view your votes")
+        voted_ids = select(Vote.complaint_id).where(Vote.user_id == current_user.id)
+        q = q.where(Complaint.id.in_(voted_ids))
     elif scope == "jurisdiction":
         # Default dashboard scope for officials — Tier 1: their jurisdiction only.
         # This is a *default view*, not an access restriction — any official can

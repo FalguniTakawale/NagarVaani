@@ -9,6 +9,7 @@ export function switchAuthTab(btn, tab) {
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('form-signin').style.display = tab === 'signin' ? 'block' : 'none';
+  document.getElementById('form-forgot').style.display = 'none';
   SIGNUP_FORMS.forEach(id => document.getElementById(id).style.display = 'none');
   if (tab === 'signup') document.getElementById('form-signup-1').style.display = 'block';
 }
@@ -127,6 +128,74 @@ function finishLogin(result, email) {
   storeSession(result.access_token, Object.assign({ email }, result)); // applyAuthUI() → official portal if role=official
   showToast(t('js.signedin', { name: result.name }));
   if (result.role !== 'official') setTimeout(() => nav('home'), 800);
+}
+
+/* ── FORGOT PASSWORD — real OTP flow, same pattern as signup verification ── */
+let _forgotEmail = '';
+
+export function showForgotPassword() {
+  document.getElementById('form-signin').style.display = 'none';
+  SIGNUP_FORMS.forEach(id => document.getElementById(id).style.display = 'none');
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('form-forgot').style.display = 'block';
+  document.getElementById('forgot-step-email').style.display = 'block';
+  document.getElementById('forgot-step-reset').style.display = 'none';
+  document.getElementById('forgot-email').value = '';
+  document.getElementById('forgot-otp').value = '';
+  document.getElementById('forgot-newpass').value = '';
+  document.getElementById('forgot-pass-error').classList.remove('show');
+}
+
+export function backToSignIn() {
+  document.getElementById('form-forgot').style.display = 'none';
+  switchAuthTabByName('signin');
+}
+
+export async function sendResetCode() {
+  const email = document.getElementById('forgot-email').value.trim();
+  if (!email || !email.includes('@')) { showToast(t('auth.invalidemail')); return; }
+  const btn = document.getElementById('forgot-send-btn');
+  btn.disabled = true;
+  try {
+    await api('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
+    _forgotEmail = email;
+    document.getElementById('forgot-step-email').style.display = 'none';
+    document.getElementById('forgot-step-reset').style.display = 'block';
+    showToast(t('auth.resetsent'));
+  } catch (err) {
+    showToast(err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+export async function submitResetPassword() {
+  const otp = document.getElementById('forgot-otp').value.trim();
+  const newPass = document.getElementById('forgot-newpass').value;
+  const err = document.getElementById('forgot-pass-error');
+  const { ok, missing } = validatePassword(newPass);
+  if (!ok) {
+    err.textContent = 'Password needs ' + missing.join(', ') + '.';
+    err.classList.add('show');
+    return;
+  }
+  err.classList.remove('show');
+  if (!otp) { showToast(t('auth.entercode')); return; }
+
+  const btn = document.getElementById('forgot-reset-btn');
+  btn.disabled = true;
+  try {
+    const result = await api('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: _forgotEmail, otp, new_password: newPass }),
+    });
+    document.getElementById('form-forgot').style.display = 'none';
+    finishLogin(result, _forgotEmail);
+  } catch (err2) {
+    showToast(err2.message);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 export async function completeSignup() {

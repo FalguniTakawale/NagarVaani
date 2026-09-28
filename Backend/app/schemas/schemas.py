@@ -136,6 +136,16 @@ class ResendOtpRequest(BaseModel):
     email: EmailStr
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    otp: str
+    new_password: str
+
+
 class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"

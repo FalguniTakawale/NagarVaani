@@ -4,6 +4,7 @@ sqlalchemy>=2.0
 aiosqlite
 asyncpg
 anthropic
+google-genai
 python-jose[cryptography]
 bcrypt
 pydantic

@@ -252,9 +252,9 @@ async def seed_complaint(session, spec, citizen, official, voters):
 
 async def main() -> int:
     do_reset = "--reset" in sys.argv
-    if not settings.anthropic_api_key:
-        print("! ANTHROPIC_API_KEY is not set — AI calls will fail open. Scores will use the intended\n"
-              "  categories, but briefs will be generic and language detection empty.")
+    if not settings.gemini_api_key and not settings.anthropic_api_key:
+        print("! Neither GEMINI_API_KEY nor ANTHROPIC_API_KEY is set — AI calls will fail open. Scores\n"
+              "  will use the intended categories, but briefs will be generic and language detection empty.")
 
     async with AsyncSessionLocal() as session:
         exists = (await session.execute(select(User).where(User.email == "ramesh@test.com"))).scalar_one_or_none()

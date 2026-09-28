@@ -64,13 +64,13 @@
     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
     <span data-i18n="nav.mycomplaints">My complaints</span>
   </div>
-  <div class="nav-item" onclick="showToast('My votes page coming soon')">
+  <div class="nav-item" id="nav-myvotes" onclick="nav('myvotes')">
     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
     <span data-i18n="nav.myvotes">My votes</span>
   </div>
   <div class="nav-divider"></div>
   <div class="nav-section-label" data-i18n="nav.info">Info</div>
-  <div class="nav-item" onclick="showToast('About page coming soon')">
+  <div class="nav-item" onclick="nav('about')">
     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     <span data-i18n="nav.about">About</span>
   </div>
@@ -255,10 +255,78 @@
   <div class="landing-footer">
     <div>NagarVaani — नगरवाणी · Your Voice, Your City</div>
     <div class="landing-footer-links">
-      <span onclick="showToast('About page coming soon')" data-i18n="nav.about">About</span>
+      <span onclick="nav('about')" data-i18n="nav.about">About</span>
       <span onclick="nav('govt')" data-i18n="land.footer.officials">For officials</span>
       <span onclick="nav('login')" data-i18n="top.signin">Sign in</span>
     </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: ABOUT
+═══════════════════════════════════════════ -->
+<div class="page" id="page-about" style="padding-top:52px;">
+  <div class="section" style="max-width:760px;">
+    <div class="section-head" style="text-align:left;">
+      <div class="section-title" style="font-size:28px;" data-i18n="about.title">About NagarVaani</div>
+      <div class="section-sub" data-i18n="about.tagline">Your Voice, Your City — नगरवाणी</div>
+    </div>
+    <p style="font-size:14px;line-height:1.7;color:var(--text-soft);margin-bottom:16px;" data-i18n="about.p1">
+      NagarVaani is an independent civic-tech platform built to give every Indian citizen — in a city
+      of millions or a village of fifty — a public, trackable way to report civic problems and be
+      heard on the merit of the problem, not on how many people shout about it.
+    </p>
+    <p style="font-size:14px;line-height:1.7;color:var(--text-soft);margin-bottom:16px;" data-i18n="about.p2">
+      It is not a government product and has no official affiliation with any state or central body.
+      It's built as a demonstration of what a transparent, AI-assisted complaint pipeline can look
+      like — from a citizen's first report to an official's action, in the citizen's own language.
+    </p>
+  </div>
+
+  <div class="section section-alt">
+    <div class="section-head">
+      <div class="section-title" data-i18n="land.how.title">How NagarVaani works</div>
+      <div class="section-sub" data-i18n="land.how.sub">From complaint to closure, everyone sees the same status</div>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div class="step-emoji">🗣️</div>
+        <div class="step-title" data-i18n="land.step1.title">Speak or type your complaint</div>
+        <div class="step-text" data-i18n="land.step1.text">In Hindi, Marathi, Tamil or English — with a photo and your location.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div class="step-emoji">🤖</div>
+        <div class="step-title" data-i18n="land.step2.title">AI ranks it by real urgency</div>
+        <div class="step-text" data-i18n="land.step2.text">Health risk, monsoon danger and repeat reports push it up the queue — not just votes.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div class="step-emoji">🏛️</div>
+        <div class="step-title" data-i18n="land.step3.title">Officials act, publicly</div>
+        <div class="step-text" data-i18n="land.step3.text">Your ward's officials see it on their dashboard and update its status for everyone.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">4</div>
+        <div class="step-emoji">✅</div>
+        <div class="step-title" data-i18n="land.step4.title">You get notified when it's fixed</div>
+        <div class="step-text" data-i18n="land.step4.text">Track progress, add proof, and dispute a false "resolved" if the problem is still there.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" style="max-width:760px;">
+    <div class="section-title" style="margin-bottom:10px;" data-i18n="about.credits.title">Built for a hackathon</div>
+    <p style="font-size:14px;line-height:1.7;color:var(--text-soft);margin-bottom:8px;" data-i18n="about.credits.p">
+      NagarVaani was built as a hackathon project exploring how AI can make civic complaint systems
+      fairer and more transparent. It uses AI models for classification, priority scoring and
+      translation — Whisper-class speech-to-text for voice notes, and large language models for
+      understanding complaints in multiple Indian languages.
+    </p>
+    <p style="font-size:13px;color:var(--slate);" data-i18n="about.contact">
+      Questions or feedback? Reach out through the sign-in page, or via the project's repository.
+    </p>
   </div>
 </div>
 
@@ -579,6 +647,21 @@
       <button class="status-tab" data-status="resolved" onclick="setMyStatusFilter('resolved', this)" data-i18n="my.resolved">Resolved</button>
     </div>
     <div id="mycomplaints-feed-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: MY VOTES
+═══════════════════════════════════════════ -->
+<div class="page three-panel" id="page-myvotes">
+  <div class="center-feed">
+    <div class="feed-header">
+      <div>
+        <div class="feed-title" data-i18n="myvotes.title">Complaints you've voted on</div>
+        <div class="feed-subtitle" id="myvotes-subtitle"></div>
+      </div>
+    </div>
+    <div id="myvotes-feed-list"></div>
   </div>
 </div>
 
@@ -1114,7 +1197,31 @@
         <button class="main-btn" type="submit">Sign in</button>
         </form>
         <div class="divider"><div class="divider-line"></div><div class="divider-text" data-i18n="auth.or">or</div><div class="divider-line"></div></div>
-        <div class="auth-footer"><span data-i18n="auth.noaccount">No account?</span> <a onclick="switchAuthTabByName('signup')" data-i18n="auth.createfree">Create one free</a> &nbsp;·&nbsp; <a onclick="showToast('Password reset email sent')" data-i18n="auth.forgot">Forgot password?</a></div>
+        <div class="auth-footer"><span data-i18n="auth.noaccount">No account?</span> <a onclick="switchAuthTabByName('signup')" data-i18n="auth.createfree">Create one free</a> &nbsp;·&nbsp; <a onclick="showForgotPassword()" data-i18n="auth.forgot">Forgot password?</a></div>
+      </div>
+      <div id="form-forgot" style="display:none;">
+        <div class="form-heading" data-i18n="auth.forgotheading">Reset your password</div>
+        <div class="form-subheading" data-i18n="auth.forgotsub">Enter your account email and we'll send you a reset code.</div>
+        <div id="forgot-step-email">
+          <div class="form-group">
+            <label class="form-label" data-i18n="auth.email">Email</label>
+            <input class="form-input" type="email" id="forgot-email" placeholder="your@email.com" />
+          </div>
+          <button class="main-btn" type="button" onclick="sendResetCode()" id="forgot-send-btn" data-i18n="auth.sendcode">Send reset code</button>
+        </div>
+        <div id="forgot-step-reset" style="display:none;">
+          <div class="form-group">
+            <label class="form-label" data-i18n="auth.resetcode">Reset code</label>
+            <input class="form-input" type="text" id="forgot-otp" placeholder="6-digit code" maxlength="6" inputmode="numeric" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" data-i18n="auth.newpassword">New password</label>
+            <input class="form-input" type="password" id="forgot-newpass" placeholder="8+ chars, upper, lower, digit, symbol" />
+            <div class="form-error" id="forgot-pass-error"></div>
+          </div>
+          <button class="main-btn" type="button" onclick="submitResetPassword()" id="forgot-reset-btn" data-i18n="auth.resetbtn">Reset password</button>
+        </div>
+        <div class="auth-footer" style="margin-top:16px;"><a onclick="backToSignIn()" data-i18n="auth.backtosignin">← Back to sign in</a></div>
       </div>
       <div id="form-signup-1" style="display:none;">
         <div class="step-indicator">

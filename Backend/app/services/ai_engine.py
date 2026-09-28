@@ -1,10 +1,11 @@
 """
 NagarVaani AI Engine
 ====================
-Three sequential Claude API calls on every complaint submission:
+Three sequential LLM calls on every complaint submission (Gemini by default,
+free tier — see _PROVIDER below to switch to Claude):
   Call 1 — Filter: reject political/communal framing
   Call 2 — Classify + Extract: category, language, severity
-  Call 3 — Score: 6-level priority hierarchy → final score 0-100
+  Call 3 — Score: 6-level priority hierarchy → final score 0-100 (pure math, no LLM call)
 
 Plus:
   - NLP comment scanner: detect place names → auto-link areas
@@ -16,11 +17,52 @@ import json
 import re
 from datetime import datetime
 from typing import Optional
-import anthropic
+from google import genai
 from app.config import get_settings
 
 settings = get_settings()
-client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+
+# Free-tier Gemini by default. If you have Anthropic credits and want Claude's
+# (generally stronger) classification instead, set ANTHROPIC_API_KEY and flip
+# _PROVIDER below back to "anthropic" — every call in this file goes through
+# the single _call_llm() helper, so that's the only place to change.
+_PROVIDER = "gemini"
+GEMINI_MODEL = "gemini-3.8-flash"
+CLAUDE_MODEL = "claude-sonnet-4-6"
+
+_gemini_client = genai.Client(api_key=settings.gemini_api_key) if settings.gemini_api_key else None
+
+if _PROVIDER == "anthropic":
+    import anthropic
+    _anthropic_client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+
+
+def _call_llm(prompt: str, max_tokens: int = 500) -> str:
+    """Single entry point for every LLM call below — returns raw response
+    text. Raises on failure; every caller already wraps this in its own
+    try/except with a fail-open fallback, so an exception here just means
+    that particular call degrades gracefully rather than crashing."""
+    if _PROVIDER == "anthropic":
+        response = _anthropic_client.messages.create(
+            model=CLAUDE_MODEL, max_tokens=max_tokens,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.content[0].text.strip()
+
+    if _gemini_client is None:
+        raise RuntimeError("GEMINI_API_KEY not configured")
+    response = _gemini_client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=prompt,
+        # thinking_budget: 0 — these are quick classification/JSON calls, not
+        # reasoning tasks. Without this, the model's hidden "thinking" tokens
+        # eat into max_output_tokens and can silently truncate the real
+        # answer before it's written (finish_reason MAX_TOKENS, .text empty).
+        config={"max_output_tokens": max_tokens, "thinking_config": {"thinking_budget": 0}},
+    )
+    if not response.text:
+        raise RuntimeError(f"Gemini returned no text (finish_reason={response.candidates[0].finish_reason})")
+    return response.text.strip()
 
 # ── SEASONAL CONTEXT ──────────────────────────────────────────────────────────
 # Month → season for India
@@ -104,12 +146,7 @@ Respond ONLY with valid JSON, no markdown:
 }}"""
 
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=300,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        raw = response.content[0].text.strip()
+        raw = _call_llm(prompt, max_tokens=300)
         # Strip markdown fences if present
         raw = re.sub(r"```(?:json)?|```", "", raw).strip()
         return json.loads(raw)
@@ -147,12 +184,7 @@ Respond ONLY with valid JSON, no markdown:
 }}"""
 
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=400,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        raw = response.content[0].text.strip()
+        raw = _call_llm(prompt, max_tokens=400)
         raw = re.sub(r"```(?:json)?|```", "", raw).strip()
         result = json.loads(raw)
         # Validate category
@@ -296,12 +328,7 @@ Respond ONLY with valid JSON, no markdown:
 }}"""
 
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=300,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        raw = response.content[0].text.strip()
+        raw = _call_llm(prompt, max_tokens=300)
         raw = re.sub(r"```(?:json)?|```", "", raw).strip()
         return json.loads(raw)
     except Exception:
@@ -327,12 +354,7 @@ Example: ["Katraj", "Hadapsar"] or []
 No markdown, no explanation."""
 
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=100,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        raw = response.content[0].text.strip()
+        raw = _call_llm(prompt, max_tokens=100)
         raw = re.sub(r"```(?:json)?|```", "", raw).strip()
         places = json.loads(raw)
         return [p for p in places if isinstance(p, str) and len(p) > 2]
@@ -358,12 +380,7 @@ Respond ONLY with valid JSON, no markdown:
 }}"""
 
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=500,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        raw = response.content[0].text.strip()
+        raw = _call_llm(prompt, max_tokens=500)
         raw = re.sub(r"```(?:json)?|```", "", raw).strip()
         return json.loads(raw)
     except Exception:

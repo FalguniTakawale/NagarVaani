@@ -66,6 +66,23 @@ async def send_otp_email(to: str, name: str, otp: str) -> bool:
     return await send_email(to, "Your NagarVaani verification code", text, html)
 
 
+async def send_password_reset_email(to: str, name: str, otp: str) -> bool:
+    text = (
+        f"Hi {name},\n\n"
+        f"Your NagarVaani password reset code is: {otp}\n\n"
+        "It expires in 15 minutes. If you didn't request this, ignore this email — your password is unchanged.\n"
+    )
+    html = f"""
+    <div style="font-family:Inter,Arial,sans-serif;max-width:480px;margin:auto;color:#1C1C1E">
+      <h2 style="color:#0F2042;margin-bottom:4px">Reset your password</h2>
+      <p>Hi {name}, enter this code in NagarVaani to set a new password:</p>
+      <div style="font-size:32px;font-weight:700;letter-spacing:8px;background:#F0EFE9;
+                  padding:16px 24px;border-radius:8px;text-align:center;color:#0F2042">{otp}</div>
+      <p style="color:#64748B;font-size:13px">Expires in 15 minutes. Didn't request this? Ignore this email — your password stays the same.</p>
+    </div>"""
+    return await send_email(to, "Reset your NagarVaani password", text, html)
+
+
 async def send_welcome_email(to: str, name: str) -> bool:
     text = (
         f"Welcome to NagarVaani, {name}!\n\n"
