@@ -1,4 +1,5 @@
 import hashlib
+import os
 import re
 
 from fastapi import FastAPI
@@ -44,11 +45,21 @@ app = FastAPI(
 if IS_DEV:
     allowed_origins = ["*"]
 else:
-    allowed_origins = [o.strip().rstrip("/") for o in settings.frontend_url.split(",") if o.strip()]
+    frontend_url = settings.frontend_url
+    if not frontend_url:
+        # Render injects its own service URL into every deploy — a real,
+        # correct value, not a guess. Using it as a fallback means a first
+        # deploy with FRONTEND_URL left blank still boots (so you can see
+        # the assigned URL and log in), instead of crashing before you ever
+        # get to that point. Only falls back on Render specifically:
+        # RENDER_EXTERNAL_URL isn't set on other hosts, so this stays a
+        # hard requirement everywhere else, as originally intended.
+        frontend_url = os.environ.get("RENDER_EXTERNAL_URL", "")
+    allowed_origins = [o.strip().rstrip("/") for o in frontend_url.split(",") if o.strip()]
     if not allowed_origins:
         raise RuntimeError(
             "FRONTEND_URL is empty but ENVIRONMENT is not 'development' — "
-            "set FRONTEND_URL to your Render URL (e.g. https://nagarvaani.onrender.com)."
+            "set FRONTEND_URL to your deployment's real URL (e.g. https://nagarvaani.onrender.com)."
         )
 
 app.add_middleware(
