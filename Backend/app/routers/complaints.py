@@ -2,7 +2,7 @@ import math
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, asc, or_
+from sqlalchemy import select, func, desc, asc, or_, false
 from sqlalchemy.orm import selectinload
 from typing import Optional, List
 from app.database import get_db
@@ -18,6 +18,9 @@ from app.schemas.schemas import (
 from app.services.auth import get_current_user, require_user, require_official
 from app.services.jurisdiction import apply_jurisdiction
 from app.services.rate_limit import check_rate_limit, client_ip, seconds_until_reset
+from app.services.telegram_client import send_message as tg_send
+from app.services.email import send_status_update_email
+from app.routers.subscriptions import notify_nearby_subscribers
 from app.services.ai_engine import (
     process_complaint_pipeline,
     detect_places_in_comment,
@@ -57,6 +60,27 @@ async def submit_complaint(
             detail="Too many submissions, try again later",
             headers={"Retry-After": str(retry_in)},
         )
+
+    # Location is required for a normal civic complaint — a report with no
+    # location is useless to an official trying to act on it. The corruption
+    # form is exempt (location can be sensitive/unknown there, e.g. "which
+    # office" isn't always a place a citizen can safely name).
+    is_corruption = payload.category is not None and payload.category.value == "corruption"
+    if not is_corruption and not (payload.location_text and payload.location_text.strip()):
+        raise HTTPException(status_code=400, detail="Location is required")
+
+    # City and state are what actually populate ward/city/state-scoped views,
+    # hotspot maps, and state-level dashboards — "Location" alone is just a
+    # free-text hint an official reads, it isn't queryable. An anonymous
+    # submitter or an account with no city/state on file has no other source
+    # for this, so the frontend asks explicitly; enforce it here too so it
+    # can't be skipped by calling the API directly.
+    resolved_city = payload.city or (current_user.city if current_user else None)
+    resolved_state = payload.state or (current_user.state if current_user else None)
+    if not is_corruption and not resolved_city:
+        raise HTTPException(status_code=400, detail="City is required")
+    if not is_corruption and not resolved_state:
+        raise HTTPException(status_code=400, detail="State is required")
 
     location_str = payload.location_text or payload.area or payload.city or ""
 
@@ -121,6 +145,24 @@ async def submit_complaint(
     db.add(complaint)
     await db.flush()
 
+    # Cross-channel notification: whoever actually submitted this (regardless
+    # of the anonymous flag, which only affects public attribution) gets a
+    # receipt on Telegram if they've linked it — the "your order has been
+    # placed" moment, same idea as the bot's own in-chat confirmation.
+    if current_user and current_user.telegram_chat_id:
+        await tg_send(
+            current_user.telegram_chat_id,
+            f"✓ Your complaint was registered on NagarVaani.\n"
+            f"Category: {complaint.category} · Priority score: {complaint.priority_score}/100\n"
+            f"Complaint ID: {complaint.id[:8]}\n\n"
+            f"We'll message you here when its status changes.",
+        )
+
+    # "My Neighborhood" alerts — never for corruption reports, same rule as
+    # every other public-facing surface in the app.
+    if complaint.category != ComplaintCategory.corruption:
+        await notify_nearby_subscribers(db, complaint, "reported")
+
     return {
         "id": complaint.id,
         "priority_score": complaint.priority_score,
@@ -142,8 +184,14 @@ async def list_complaints(
     sort: str = Query("priority", description="priority | votes | recent | distance (nearby only)"),
     category: Optional[str] = Query(None),
     status_filter: Optional[str] = Query(None),
-    lat: Optional[float] = Query(None),
-    lng: Optional[float] = Query(None),
+    # Strings, not floats — a frontend bug elsewhere already sent literal
+    # "null" here once (JS `null` stringified by URLSearchParams), which a
+    # float-typed Query rejects with a raw 422 no matter what fixes it on
+    # the client side. Parsed defensively below instead, so any client
+    # (present or future) sending "null"/""/garbage degrades to "no
+    # coordinates" rather than a hard error.
+    lat: Optional[str] = Query(None),
+    lng: Optional[str] = Query(None),
     radius_km: float = Query(5.0, ge=0.1, le=100),
     near_text: Optional[str] = Query(None, description="nearby without GPS: match area / city / location text"),
     page: int = Query(1, ge=1),
@@ -151,11 +199,27 @@ async def list_complaints(
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user),
 ):
+    def _parse_coord(raw: Optional[str]) -> Optional[float]:
+        if raw is None or raw.strip().lower() in ("", "null", "undefined", "nan"):
+            return None
+        try:
+            return float(raw)
+        except ValueError:
+            return None
+
+    lat = _parse_coord(lat)
+    lng = _parse_coord(lng)
+
     q = select(Complaint).where(Complaint.is_ai_filtered == True)
 
     # Corruption reports live in their own section — never mixed into the
-    # public feeds, and the corruption scope shows nothing else.
+    # public feeds, and the corruption scope shows nothing else. Unlike every
+    # other scope, this one requires an account: these can name the official
+    # being accused, so "public feed" here means "any signed-in citizen",
+    # not "anyone with curl and no login".
     if scope == "corruption":
+        if not current_user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required to view corruption reports")
         q = q.where(Complaint.category == ComplaintCategory.corruption)
     elif scope in ("ward", "trending", "nearby") and category != "corruption":
         q = q.where(Complaint.category != ComplaintCategory.corruption)
@@ -168,8 +232,20 @@ async def list_complaints(
             q = q.where(Complaint.ward == ward_filter)
         elif city:
             q = q.where(Complaint.city == city)
+        else:
+            # No ward and no city to scope to (a guest with no account, or a
+            # logged-in user who never set a location) — this must NOT fall
+            # through to an unfiltered, nationwide query. "Issues in your
+            # ward" showing every ward in the country is a real bug, not a
+            # helpful fallback. Return nothing rather than mislead.
+            q = q.where(false())
     elif scope == "trending":
-        pass  # All complaints, nationwide
+        # Nationwide by default; near_text narrows it to a specific area/ward/city
+        # without needing GPS — same free-text match "nearby" uses without a fix.
+        if near_text:
+            like = f"%{near_text.strip()}%"
+            q = q.where(or_(Complaint.area.ilike(like), Complaint.city.ilike(like),
+                            Complaint.location_text.ilike(like), Complaint.ward.ilike(like)))
     elif scope == "nearby":
         if lat is not None and lng is not None:
             # Cheap bounding box in SQL (SQLite has no trig functions); the exact
@@ -210,6 +286,15 @@ async def list_complaints(
         elif level == OfficialLevel.state and current_user.state:
             q = q.where(Complaint.state == current_user.state)
         # level == central (or unset): nationwide, no filter
+
+    # Home ("ward") and Trending are "what needs attention" feeds — a
+    # resolved issue has nothing left to act on there, so it doesn't belong
+    # once it's fixed. Only skip this when the caller explicitly asked for a
+    # specific status (so e.g. a future "show resolved too" toggle can still
+    # request it) — it never applies to "My complaints", where seeing your
+    # own resolved items is the whole point.
+    if scope in ("ward", "trending") and not status_filter:
+        q = q.where(Complaint.status != ComplaintStatus.resolved)
 
     # Category filter
     if category:
@@ -394,6 +479,7 @@ async def get_related_complaints(
 async def get_complaint(
     complaint_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
 ):
     result = await db.execute(
         select(Complaint)
@@ -408,6 +494,10 @@ async def get_complaint(
     complaint = result.scalar_one_or_none()
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
+    # Same login requirement as scope=corruption on the list endpoint — a
+    # complaint id alone (e.g. shared via a link) shouldn't bypass it.
+    if complaint.category == ComplaintCategory.corruption and not current_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Login required to view this report")
 
     return {
         "id": complaint.id,
@@ -673,6 +763,43 @@ async def update_status(
         note=payload.note,
     )
     db.add(log)
+
+    # Notify the citizen — on Telegram if linked, and always by email too
+    # (every account has one; Telegram is opt-in extra, not a replacement).
+    # Both respect the same notify_status_change preference.
+    if complaint.author_id and old_status != payload.status:
+        author = (await db.execute(select(User).where(User.id == complaint.author_id))).scalar_one_or_none()
+        if author and author.notify_status_change:
+            status_labels = {
+                "open": "Open", "in_progress": "In progress",
+                "resolved": "Resolved ✓", "disputed": "Disputed", "rejected": "Rejected",
+            }
+            status_value = payload.status.value if hasattr(payload.status, "value") else str(payload.status)
+            new_label = status_labels.get(status_value, status_value)
+
+            if author.telegram_chat_id:
+                text = (
+                    f"📋 Update on your complaint (ID {complaint_id[:8]}):\n"
+                    f"Status is now: {new_label}"
+                )
+                if payload.note:
+                    text += f"\nNote from {official.name}: {payload.note}"
+                if payload.status == ComplaintStatus.resolved:
+                    text += "\n\nNot actually fixed? You can dispute this on the website."
+                await tg_send(author.telegram_chat_id, text)
+
+            complaint_title = (complaint.text_translated or complaint.text_original or "")[:80]
+            await send_status_update_email(
+                author.email, author.name, complaint_id, complaint_title,
+                status_value, payload.note, official.name,
+            )
+
+    # Map reactivity + "My Neighborhood" alerts both key off this: a resolved
+    # complaint drops off /stats/map (default status_filter="open") and
+    # nearby subscribers get told it's fixed, in the same request that
+    # resolved it rather than on a delay.
+    if payload.status == ComplaintStatus.resolved and old_status != ComplaintStatus.resolved and complaint.category != ComplaintCategory.corruption:
+        await notify_nearby_subscribers(db, complaint, "resolved")
 
     return {
         "complaint_id": complaint_id,

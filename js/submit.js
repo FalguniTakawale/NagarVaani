@@ -146,6 +146,16 @@ export async function submitComplaint() {
   const text = document.getElementById('complaint-text').value;
   if (!text.trim()) { showToast(t('js.describefirst')); return; }
   const location_text = document.getElementById('complaint-location').value;
+  if (!location_text.trim()) { showToast(t('js.locationfirst')); return; }
+
+  // Use the account's known city/state if it has one; otherwise this
+  // complaint has nowhere else to get it from, so the explicit fields are
+  // required (updateSubmitAuthNotice() shows/hides them accordingly).
+  const knownCity = authUser && authUser.city;
+  const knownState = authUser && authUser.state;
+  const city = knownCity || document.getElementById('submit-city').value.trim();
+  const state = knownState || document.getElementById('submit-state').value.trim();
+  if (!knownCity && (!city || !state)) { showToast(t('js.citystatefirst')); return; }
 
   if (photos.some(p => p.uploading)) {
     showToast('Still uploading photos — hang on a moment');
@@ -168,19 +178,19 @@ export async function submitComplaint() {
       text,
       location_text,
       ward: authUser ? authUser.ward : null,
-      city: authUser ? authUser.city : null,
-      state: authUser ? authUser.state : null,
+      city,
+      state,
       latitude: capturedLat,
       longitude: capturedLng,
       images,
     };
     const result = await api('/complaints', { method: 'POST', body: JSON.stringify(payload) });
-    showToast(t('js.submitted', { score: result.priority_score }));
     document.getElementById('complaint-text').value = '';
     document.getElementById('complaint-location').value = '';
+    if (!knownCity) document.getElementById('submit-city').value = '';
     resetLocationCapture();
     resetPhotos();
-    setTimeout(() => nav('home'), 1200);
+    showSubmitSuccess(result);
   } catch (err) {
     if (err.status === 422 && err.data && err.data.detail && err.data.detail.rejected) {
       const d = err.data.detail;
@@ -194,5 +204,74 @@ export async function submitComplaint() {
     btn.disabled = false;
     btn.style.opacity = '';
     btn.textContent = t('submit.button');
+  }
+}
+
+/* ── SUCCESS CONFIRMATION ──
+   A toast disappears in under 3 seconds — nowhere near long enough to note
+   down a complaint ID, and an anonymous submitter (not signed in) has no
+   "My complaints" list to find it in afterward. This stays until dismissed. */
+let lastSubmitId = null;
+
+function showSubmitSuccess(result) {
+  lastSubmitId = result.id;
+  document.getElementById('submit-success-score').textContent =
+    t('submit.successscore', { score: Math.round(result.priority_score), category: result.category });
+  document.getElementById('submit-success-id').textContent = result.id;
+  document.getElementById('submit-success-idlabel').textContent = t('submit.idlabel');
+  document.getElementById('submit-success-note').textContent = authUser
+    ? t('submit.notesignedin')
+    : t('submit.noteanonymous');
+  document.getElementById('submit-success-overlay').hidden = false;
+}
+
+export function copySubmitId() {
+  if (!lastSubmitId) return;
+  navigator.clipboard.writeText(lastSubmitId).then(
+    () => showToast(t('submit.copied')),
+    () => showToast(lastSubmitId), // clipboard blocked (e.g. insecure context) — show it so they can note it manually
+  );
+}
+
+export function dismissSubmitSuccess() {
+  document.getElementById('submit-success-overlay').hidden = true;
+  nav('home');
+}
+
+/* ── AUTH-STATE NOTICE ──
+   Explains, before submitting, what "anonymous" actually means here and why
+   signing in is the alternative — not just what happens after the fact. */
+export function updateSubmitAuthNotice() {
+  const anonNotice = document.getElementById('submit-anon-notice');
+  const signedInNotice = document.getElementById('submit-signedin-notice');
+  if (authUser) {
+    anonNotice.style.display = 'none';
+    signedInNotice.style.display = 'flex';
+    document.getElementById('submit-signedin-notice-text').textContent =
+      t('submit.signedinnotice', { name: authUser.name });
+  } else {
+    signedInNotice.style.display = 'none';
+    anonNotice.style.display = 'flex';
+    document.getElementById('submit-anon-notice-text').textContent = t('submit.anonnotice');
+    document.getElementById('submit-anon-notice-link').textContent = t('submit.anonnoticelink');
+  }
+
+  // City & State: an anonymous complaint (or a signed-in account with no
+  // city/state on file) has nowhere else to get this from — "Location" alone
+  // is just a free-text hint, it doesn't populate ward/city/state-scoped
+  // views, hotspot maps, or state-level dashboards. Ask for it explicitly
+  // rather than silently submitting a complaint with no real geography.
+  const knownCity = authUser && authUser.city;
+  const knownState = authUser && authUser.state;
+  const citystateGroup = document.getElementById('submit-citystate-group');
+  const citystateKnown = document.getElementById('submit-citystate-known');
+  if (knownCity && knownState) {
+    citystateGroup.style.display = 'none';
+    citystateKnown.style.display = 'block';
+    document.getElementById('submit-citystate-known-text').textContent =
+      t('submit.citystateknown', { city: knownCity, state: knownState });
+  } else {
+    citystateGroup.style.display = 'block';
+    citystateKnown.style.display = 'none';
   }
 }

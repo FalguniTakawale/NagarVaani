@@ -1,17 +1,28 @@
-import { loadFeed, stopMyComplaintsPolling } from './feed.js';
+import { loadFeed, stopMyComplaintsPolling, loadDashboardStats, loadGovtSchemesPage, loadLandingStats } from './feed.js';
+import { authToken } from './api.js';
 import { loadComplaintDetail } from './detail.js';
 import { loadGovtDashboard, initGovtMaps } from './govt.js';
-import { loadNearMe } from './nearme.js';
+import { loadNearMe, stopNearMePolling } from './nearme.js';
 import { loadCorruptionFeed } from './corruption.js';
+import { showToast } from './ui.js';
+import { updateSubmitAuthNotice } from './submit.js';
+import { loadForOfficials } from './forofficials.js';
+import { loadImpactPage, initOrgSupportPage } from './getinvolved.js';
+import { showChatbotWidget } from './chatbot.js';
+import { initGoogleSignIn } from './auth.js';
 
-export const feedPages = ['home', 'trending', 'nearme', 'mycomplaints', 'myvotes'];
+// Trending is deliberately NOT in this list — it's a standalone public
+// preview (top issues + a "sign in for more" prompt), not part of the
+// signed-in app shell, so it never gets the left-nav/right-panel chrome.
+export const feedPages = ['home', 'nearme', 'mycomplaints', 'myvotes'];
 
 // The wrapper div for each page carries its real layout mode (three-panel
 // pages must stay flex; everything else lays itself out via an inner child).
 const pageDisplay = {
-  home: 'flex', trending: 'flex', nearme: 'flex', mycomplaints: 'flex', myvotes: 'flex',
+  home: 'flex', nearme: 'flex', mycomplaints: 'flex', myvotes: 'flex',
   detail: 'block', submit: 'block', govt: 'block', login: 'block', corruption: 'block',
-  landing: 'block', about: 'block',
+  landing: 'block', about: 'block', track: 'block', forofficials: 'block',
+  govtschemes: 'block', trending: 'block', impact: 'block', orgsupport: 'block',
 };
 
 export let currentComplaintId = null;
@@ -29,6 +40,7 @@ let historyStarted = false;
 export function nav(page, opts = {}) {
   const { fromPopstate = false } = opts;
   stopMyComplaintsPolling();
+  stopNearMePolling();
   document.querySelectorAll('.page').forEach(p => {
     p.classList.remove('active');
     p.style.display = 'none';
@@ -60,9 +72,23 @@ export function nav(page, opts = {}) {
   if (navEl) navEl.classList.add('active');
 
   if (page === 'govt') { loadGovtDashboard(); setTimeout(initGovtMaps, 50); }
+  if (page === 'forofficials') loadForOfficials();
+  if (page === 'govtschemes') loadGovtSchemesPage();
+  if (page === 'landing') loadLandingStats();
+  showChatbotWidget(page === 'home');
+  if (page === 'impact') loadImpactPage();
+  if (page === 'orgsupport') initOrgSupportPage();
+  if (page === 'submit') updateSubmitAuthNotice();
+  if (page === 'login') initGoogleSignIn();
   if (page === 'corruption') loadCorruptionFeed();
   else if (page === 'nearme') loadNearMe();
+  else if (page === 'trending') {
+    loadFeed('trending');
+    const cta = document.getElementById('trending-signin-cta');
+    if (cta) cta.hidden = !!authToken;
+  }
   else if (feedPages.includes(page)) loadFeed(page);
+  if (feedPages.includes(page)) loadDashboardStats();
 
   if (!fromPopstate) {
     const state = { page, id: page === 'detail' ? currentComplaintId : undefined };
@@ -95,3 +121,26 @@ window.addEventListener('popstate', (e) => {
     nav(state.page || 'landing', { fromPopstate: true });
   }
 });
+
+/* The topbar search box's only real job right now: let anyone — including a
+   guest with no account — paste the complaint ID they were given after
+   submitting and jump straight to it. There's no broader text search across
+   complaints yet, so this only handles the ID case; openComplaint() already
+   shows a clear "couldn't load this complaint" if the ID doesn't match. */
+export function topbarSearch(query) {
+  const q = (query || '').trim();
+  if (!q) { showToast('Type a complaint ID to look it up.'); return; }
+  const input = document.getElementById('topbar-search-input');
+  if (input) input.value = '';
+  openComplaint(q);
+}
+
+/* Same idea as topbarSearch, but as its own dedicated, clearly-labeled page —
+   more discoverable for someone who was never signed in and wouldn't think
+   to use the topbar search box for this. */
+export function trackComplaintById() {
+  const input = document.getElementById('track-id-input');
+  const q = (input.value || '').trim();
+  if (!q) { showToast('Enter the complaint ID you were given.'); return; }
+  openComplaint(q);
+}

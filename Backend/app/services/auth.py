@@ -12,11 +12,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.database import get_db
-from app.models.models import User, UserRole
+from app.models.models import User, UserRole, OfficialVerificationStatus
 
 settings = get_settings()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+
+# There's no real government employee registry to check a signup against, so
+# this is a soft gate: block the free/personal email providers people already
+# have, so an official at least has to use a work-looking address. It's not
+# proof of identity — the admin approval step (require_official below) is
+# what actually gates official-only access.
+PERSONAL_EMAIL_DOMAINS = {
+    "gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com",
+    "rediffmail.com", "protonmail.com", "aol.com", "live.com", "yandex.com",
+}
+
+
+def is_personal_email_domain(email: str) -> bool:
+    domain = email.rsplit("@", 1)[-1].lower()
+    return domain in PERSONAL_EMAIL_DOMAINS
 
 
 PASSWORD_RULES = [
@@ -39,6 +54,21 @@ def validate_password(password: str) -> Optional[str]:
 
 def generate_otp() -> str:
     return f"{secrets.randbelow(1_000_000):06d}"
+
+
+def generate_temp_password() -> str:
+    """A random password that already satisfies validate_password's rules,
+    so an approved official can log in immediately and change it whenever."""
+    import string
+    specials = "!@#$%*"
+    required = [
+        secrets.choice(string.ascii_uppercase), secrets.choice(string.ascii_lowercase),
+        secrets.choice(string.digits), secrets.choice(specials),
+    ]
+    pool = string.ascii_letters + string.digits
+    required += [secrets.choice(pool) for _ in range(6)]
+    secrets.SystemRandom().shuffle(required)
+    return "".join(required)
 
 
 def hash_password(password: str) -> str:
@@ -83,4 +113,15 @@ async def require_user(current_user: Optional[User] = Depends(get_current_user))
 async def require_official(current_user: Optional[User] = Depends(get_current_user)) -> User:
     if not current_user or current_user.role != UserRole.official:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Official access required")
+    if current_user.official_status != OfficialVerificationStatus.approved:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your official account is still pending admin approval",
+        )
+    return current_user
+
+
+async def require_admin(current_user: Optional[User] = Depends(get_current_user)) -> User:
+    if not current_user or not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     return current_user

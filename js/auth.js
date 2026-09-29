@@ -3,6 +3,49 @@ import { showToast } from './ui.js';
 import { nav } from './nav.js';
 import { t } from './i18n.js';
 
+/* ── GOOGLE SIGN-IN ──
+   /auth/google-config tells us whether the server has a real Client ID set
+   (see Backend/.env.example) — no key configured means no button, same
+   "fails clearly instead of showing something broken" rule the app already
+   follows for Telegram/Cloudinary/SMTP. Fetched once and cached; the button
+   itself is (re)rendered every time the login page is opened, since GSI
+   needs the container to actually be visible/sized to draw into it. */
+let _googleConfig = null;
+
+async function getGoogleConfig() {
+  if (_googleConfig) return _googleConfig;
+  try {
+    _googleConfig = await api('/auth/google-config');
+  } catch (_) {
+    _googleConfig = { enabled: false };
+  }
+  return _googleConfig;
+}
+
+export async function initGoogleSignIn() {
+  const container = document.getElementById('google-signin-container');
+  if (!container) return;
+  const config = await getGoogleConfig();
+  if (!config.enabled || !window.google || !window.google.accounts) {
+    container.hidden = true;
+    return;
+  }
+  container.hidden = false;
+  container.style.display = 'flex';
+  google.accounts.id.initialize({ client_id: config.client_id, callback: onGoogleCredential });
+  container.innerHTML = '';
+  google.accounts.id.renderButton(container, { theme: 'outline', size: 'large', width: 320, text: 'continue_with' });
+}
+
+async function onGoogleCredential(response) {
+  try {
+    const result = await api('/auth/google', { method: 'POST', body: JSON.stringify({ credential: response.credential }) });
+    finishLogin(result, result.email);
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+
 const SIGNUP_FORMS = ['form-signup-1', 'form-signup-2', 'form-signup-3', 'form-signup-4'];
 
 export function switchAuthTab(btn, tab) {
@@ -19,6 +62,15 @@ export function switchAuthTabByName(tab) {
   switchAuthTab(tab === 'signup' ? tabs[1] : tabs[0], tab);
 }
 
+/* CTA from the "For officials" info page — drop straight into the signup
+   form with Official pre-selected, instead of making them find it themselves. */
+export function startOfficialSignup() {
+  nav('login');
+  switchAuthTabByName('signup');
+  const officialCard = document.querySelector('#form-signup-1 .role-cards .role-card:nth-child(2)');
+  if (officialCard) selectSignupRole(officialCard);
+}
+
 export function selectRole(el) {
   el.closest('.role-cards').querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
@@ -32,6 +84,7 @@ export function selectSignupRole(el) {
   el.classList.add('selected');
   const isOfficial = el.querySelector('.role-card-title').textContent === 'Official';
   document.getElementById('official-level-group').style.display = isOfficial ? 'block' : 'none';
+  document.getElementById('signup-official-verify-notice').style.display = isOfficial ? 'flex' : 'none';
 }
 
 export function goToStep(step) {
@@ -125,7 +178,20 @@ export async function doSignIn() {
 }
 
 function finishLogin(result, email) {
-  storeSession(result.access_token, Object.assign({ email }, result)); // applyAuthUI() → official portal if role=official
+  storeSession(result.access_token, Object.assign({ email }, result)); // applyAuthUI() → official portal if role=official && official_status=approved
+  if (result.role === 'official' && result.official_status === 'pending') {
+    // No official-only access yet (require_official on the backend rejects
+    // it) — say so clearly instead of silently landing them on a dashboard
+    // that would just fail every request.
+    showToast(t('js.officialpending'));
+    setTimeout(() => nav('home'), 800);
+    return;
+  }
+  if (result.role === 'official' && result.official_status === 'rejected') {
+    showToast(t('js.officialrejected'));
+    setTimeout(() => nav('home'), 800);
+    return;
+  }
   showToast(t('js.signedin', { name: result.name }));
   if (result.role !== 'official') setTimeout(() => nav('home'), 800);
 }
@@ -185,12 +251,17 @@ export async function submitResetPassword() {
   const btn = document.getElementById('forgot-reset-btn');
   btn.disabled = true;
   try {
-    const result = await api('/auth/reset-password', {
+    // The endpoint returns a valid session token (handy for other callers),
+    // but we deliberately don't use it here — after a reset, the person
+    // should see a clear confirmation and sign in fresh with their new
+    // password, not get silently logged in.
+    await api('/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify({ email: _forgotEmail, otp, new_password: newPass }),
     });
-    document.getElementById('form-forgot').style.display = 'none';
-    finishLogin(result, _forgotEmail);
+    showToast(t('auth.resetsuccess'));
+    document.getElementById('signin-email').value = _forgotEmail;
+    switchAuthTabByName('signin');
   } catch (err2) {
     showToast(err2.message);
   } finally {

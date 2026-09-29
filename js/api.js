@@ -64,11 +64,15 @@ export function requireLogin(message) {
 // main.js wire the references once everything is loaded, instead.
 let showToastRef = () => {};
 let navRef = () => {};
+let showHelpRef = () => {};
+let refreshNotifDotRef = () => {};
 let modeRefs = { official: () => {}, citizen: () => {} };
-export function setUiRefs(showToastFn, navFn, modes) {
+export function setUiRefs(showToastFn, navFn, modes, showHelpFn, refreshNotifDotFn) {
   showToastRef = showToastFn;
   navRef = navFn;
   if (modes) modeRefs = modes;
+  if (showHelpFn) showHelpRef = showHelpFn;
+  if (refreshNotifDotFn) refreshNotifDotRef = refreshNotifDotFn;
 }
 
 export function logout() {
@@ -94,7 +98,12 @@ export function applyAuthUI() {
   const myPanel = document.getElementById('mycomplaints-panel');
   const guestPanel = document.getElementById('mycomplaints-panel-guest');
   const myPanelEmail = document.getElementById('mycomplaints-panel-email');
-  const isOfficial = !!(authUser && authUser.role === 'official');
+  // An official whose account hasn't been admin-approved yet has no
+  // official-only access on the backend (require_official rejects them) —
+  // treat them as a citizen here too, rather than opening a dashboard that
+  // would just 403 on every call.
+  const isOfficial = !!(authUser && authUser.role === 'official' && authUser.official_status === 'approved');
+  const isPendingOfficial = !!(authUser && authUser.role === 'official' && authUser.official_status === 'pending');
   if (authUser) {
     const initials = String(authUser.name || '?').trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
     avatar.textContent = initials || '?';
@@ -102,8 +111,12 @@ export function applyAuthUI() {
     signinBtn.style.display = 'none';
     if (signoutBtn) signoutBtn.hidden = false;
   } else {
+    // Guests already have a dedicated "Sign in" button in the topbar, so this
+    // "?" avatar circle is repurposed as the Help & FAQ trigger instead of
+    // duplicating that sign-in action.
     avatar.textContent = '?';
-    avatar.onclick = () => navRef('login');
+    avatar.title = 'Help';
+    avatar.onclick = () => showHelpRef();
     signinBtn.style.display = 'inline-block';
     if (signoutBtn) signoutBtn.hidden = true;
   }
@@ -114,7 +127,54 @@ export function applyAuthUI() {
     guestPanel.hidden = !!authUser;
     if (authUser && myPanelEmail) myPanelEmail.textContent = authUser.email || 'your email';
   }
+  const tgStatus = document.getElementById('telegram-link-status');
+  const tgBtn = document.getElementById('telegram-link-btn');
+  if (tgStatus && tgBtn) {
+    const linked = !!(authUser && authUser.telegram_chat_id);
+    tgStatus.textContent = linked ? t('panel.telegramlinked') : t('panel.telegramnotlinked');
+    tgStatus.classList.toggle('linked', linked);
+    tgBtn.hidden = linked;
+  }
   if (portalBtn) portalBtn.hidden = !isOfficial;
+  refreshNotifDotRef();
   // Officials land in their own portal; everyone else gets the citizen app.
   if (isOfficial) modeRefs.official(); else modeRefs.citizen();
+}
+
+let _tgPollTimer = null;
+
+export async function startTelegramLink() {
+  if (!authToken) { navRef('login'); return; }
+  const btn = document.getElementById('telegram-link-btn');
+  btn.disabled = true;
+  try {
+    const result = await api('/auth/telegram-link-code', { method: 'POST' });
+    window.open(result.deep_link, '_blank');
+    showToastRef(t('panel.telegramopened'));
+
+    // Poll for up to a minute — the person just needs to tap "Start" in the
+    // Telegram app/web client that just opened, no manual refresh needed.
+    clearInterval(_tgPollTimer);
+    let attempts = 0;
+    _tgPollTimer = setInterval(async () => {
+      attempts++;
+      try {
+        const me = await api('/auth/me');
+        if (me.telegram_chat_id) {
+          clearInterval(_tgPollTimer);
+          authUser = Object.assign({}, authUser, me);
+          authToken = me.access_token;
+          localStorage.setItem('nv_token', authToken);
+          localStorage.setItem('nv_user', JSON.stringify(authUser));
+          applyAuthUI();
+          showToastRef(t('panel.telegramlinkedtoast'));
+        }
+      } catch (_) { /* transient — keep polling until the attempt cap */ }
+      if (attempts >= 20) clearInterval(_tgPollTimer); // ~60s at 3s intervals
+    }, 3000);
+  } catch (err) {
+    showToastRef(err.message);
+  } finally {
+    btn.disabled = false;
+  }
 }

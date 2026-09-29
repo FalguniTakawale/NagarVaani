@@ -2,7 +2,7 @@
    (this isn't a popularity contest), no score badge (urgency scoring is
    for infrastructure), no seasonal chips. Category is pinned server-side
    via ComplaintCreate.category so the classifier can't file it as "other". */
-import { api, authUser } from './api.js';
+import { api, authToken, authUser } from './api.js';
 import { showToast, escapeHtml, loadingPlaceholder } from './ui.js';
 import { t } from './i18n.js';
 
@@ -24,6 +24,13 @@ function renderCorruptionCard(c) {
 export async function loadCorruptionFeed() {
   const list = document.getElementById('corruption-feed-list');
   const count = document.getElementById('corr-count');
+  // Viewing corruption reports (unlike submitting one) requires an account —
+  // the backend enforces this too, this just avoids a raw 401 in the feed.
+  if (!authToken) {
+    count.textContent = '';
+    list.innerHTML = `<div style="padding:24px;text-align:center;color:var(--slate);font-size:13px;">${t('corr.loginrequired')} <a style="color:var(--navy);cursor:pointer;" onclick="nav('login')">${t('top.signin')}</a></div>`;
+    return;
+  }
   list.innerHTML = loadingPlaceholder();
   try {
     const items = await api('/complaints?scope=corruption&sort=recent&per_page=50');

@@ -13,6 +13,44 @@ sorted by what actually matters.
 Built for **Build with AI: Code for Communities** (H2S) — Track 1, AI for Digital
 Public Infrastructure & Governance.
 
+Licensed under [MIT](LICENSE) — see [PRIVACY.md](PRIVACY.md) for what data the
+platform actually collects and where it goes.
+
+---
+
+## Known limitations & future work
+
+This is a hackathon-stage prototype for **India specifically**, not the full
+BRICS-wide platform the challenge statement describes. Being direct about the
+gap rather than quietly building only the easy 80%:
+
+- **Country scope**: every government scheme, ministry link, state/district
+  list, and language is India-only. There's no country concept anywhere in
+  the data model. Extending to another BRICS nation means adding its own
+  schemes/ministries/languages, not re-architecting the platform — the
+  scoring engine, translation pipeline, and dashboards are already
+  country-agnostic — but that data layer doesn't exist yet for anyone but India.
+- **No external dataset ingestion**: the priority scorer's population factor
+  is `population=10000`, hardcoded at the call site (see `complaints.py`) —
+  there's no real census/demographic dataset behind it. Infrastructure-index
+  data and public investment-plan data aren't ingested at all. The platform
+  surfaces real complaint-density hotspots (that part is genuine), but it
+  doesn't yet combine that with external government planning data the way
+  the challenge asks.
+- **No automated project recommendations**: officials can flag a complaint
+  as an infrastructure gap, but there's no model generating a specific
+  "build X here, costing Y" recommendation from data. An earlier version of
+  this prototype showed a fabricated ₹-cost figure for this; it was removed
+  on purpose rather than replaced with another invented number, and hasn't
+  been replaced with a real one yet.
+
+What's already real and working: multilingual voice/text/Telegram intake,
+AI severity scoring (not vote-based), cross-district pattern detection,
+two-way translation between any complaint's language and the viewer's
+selected language, jurisdiction-scoped official dashboards with admin-gated
+account verification, and a real (if scoped-down) government-scheme/ministry
+directory for India.
+
 ---
 
 ## Quick Start
@@ -58,6 +96,7 @@ All read from `Backend/.env` (see `.env.example`).
 | `TELEGRAM_BOT_TOKEN` | No | From @BotFather. Enables the `/api/telegram/webhook` channel. |
 | `TELEGRAM_WEBHOOK_SECRET` | Prod if bot used | Random string; pass the same value as `secret_token` to `setWebhook`. Requests without it get a bare 403. |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | No | Gmail SMTP for signup OTP + welcome email. Without them the OTP is printed to the server log instead. |
+| `GOOGLE_CLIENT_ID` | No | "Continue with Google" sign-in. Without it, the button is hidden and password sign-in works as before. |
 
 ---
 
@@ -112,6 +151,7 @@ All under `/api`. Interactive docs at `/docs` when the server is running.
 | `POST` | `/auth/register` | — | Create account (citizen or official) |
 | `POST` | `/auth/login` | — | Get JWT. 403 with `requires_verification` until the email OTP is confirmed. |
 | `POST` | `/auth/verify-email` | — | `{user_id, otp}` → JWT. `/auth/resend-otp` re-sends (3/hour/email). |
+| `POST` | `/auth/google` | — | `{credential}` (Google ID token) → JWT. Creates a citizen account on first sign-in; official accounts still require the work-email + admin-approval flow. Hidden client-side if `GOOGLE_CLIENT_ID` isn't set. |
 | `POST` | `/complaints` | optional | Submit → filter → classify → score → brief. **5 per IP per hour.** 422 with `suggested_rephrasing` if the filter rejects it. |
 | `GET` | `/complaints` | optional | List. `scope=ward\|trending\|nearby\|mine\|jurisdiction\|corruption`, `sort=priority\|votes\|recent\|distance`, `lat`/`lng`/`radius_km` or `near_text` for nearby, `category`, `status_filter`, `page`, `per_page`. Corruption never appears in public feeds. |
 | `GET` | `/complaints/{id}` | — | Full detail: breakdown, images, comments, linked areas, status log |

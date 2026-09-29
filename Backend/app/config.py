@@ -10,8 +10,13 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""  # ai_engine.py uses this by default (free tier) — set anthropic_api_key too to switch back
     jwt_secret: str = "dev-secret-change-me"
     jwt_algorithm: str = "HS256"
-    jwt_expire_minutes: int = 60 * 24 * 7
+    jwt_expire_minutes: int = 60 * 24 * 30  # "stay signed in" — a month before a re-login is needed
     database_url: str = "sqlite+aiosqlite:///./nagarvaani.db"
+
+    # Google Sign-In (Google Identity Services) — a real OAuth Client ID from
+    # console.cloud.google.com, "OAuth client ID" → "Web application". Public
+    # by design (it's embedded in the frontend), unlike every other key here.
+    google_client_id: str = ""
 
     telegram_bot_token: str = ""
     telegram_webhook_secret: str = ""  # sent by Telegram as X-Telegram-Bot-Api-Secret-Token

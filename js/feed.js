@@ -1,7 +1,7 @@
 import { api, authToken, authUser, requireLogin } from './api.js';
 import { showToast, escapeHtml, loadingPlaceholder } from './ui.js';
 import { currentSort, setCurrentSort } from './nav.js';
-import { t } from './i18n.js';
+import { t, currentLang } from './i18n.js';
 
 export const CATEGORY_LABELS = {
   drainage: 'Drainage', road: 'Road', garbage: 'Garbage', electricity: 'Electricity',
@@ -21,6 +21,16 @@ export function scoreLabel(score) {
   return 'LOW';
 }
 
+/* Feed cards default to text_translated (English, set once at submission)
+   or text_original — neither of which is guaranteed to match the viewer's
+   own selected language. A Hindi-speaking voter with the UI set to Hindi
+   should be able to read a Tamil complaint in Hindi before voting, not just
+   in English. cardOriginals caches each card's true original text so
+   translateCardTitle() can translate it to whatever language the viewer
+   has selected, the same on-demand real translation already used on the
+   detail page and on comments — just surfaced here too. */
+const cardOriginals = {};
+
 export function renderComplaintCard(c, { underTitle = '' } = {}) {
   const isCritical = c.is_safety_risk || c.priority_score >= 85;
   const chips = [`<span class="chip chip-type">${CATEGORY_LABELS[c.category] || 'Other'}</span>`];
@@ -28,6 +38,15 @@ export function renderComplaintCard(c, { underTitle = '' } = {}) {
   if (c.ward) chips.push(`<span class="chip chip-loc">Ward ${c.ward}</span>`);
   else if (c.city) chips.push(`<span class="chip chip-loc">${c.city}</span>`);
   if (c.linked_area_count > 0) chips.push(`<span class="chip chip-linked">+${c.linked_area_count} linked areas</span>`);
+
+  const lang = currentLang();
+  const alreadyInViewerLang = c.detected_language && c.detected_language === lang;
+  const displayText = alreadyInViewerLang ? (c.text_original || c.text_translated) : (c.text_translated || c.text_original);
+  cardOriginals[c.id] = { text: c.text_original || c.text_translated, detected: c.detected_language };
+  // English viewers already get text_translated; viewers whose language
+  // matches the original need no translation either — only offer the link
+  // when neither of those already covers it.
+  const offerTranslate = lang !== 'en' && c.detected_language && !alreadyInViewerLang;
 
   return `
     <div class="complaint-card ${isCritical ? 'critical-card' : ''}" onclick="openComplaint('${c.id}')">
@@ -38,7 +57,8 @@ export function renderComplaintCard(c, { underTitle = '' } = {}) {
           <div class="vote-label">votes</div>
         </div>
         <div class="cc-body">
-          <div class="cc-title">${escapeHtml(c.text_translated || c.text_original)}</div>
+          <div class="cc-title" id="cc-title-${c.id}">${escapeHtml(displayText)}</div>
+          ${offerTranslate ? `<span class="cc-translate-link" data-cid="${c.id}" onclick="event.stopPropagation();translateCardTitle('${c.id}', this)">🌐 ${t('cc.translate')}</span>` : ''}
           ${underTitle}
           <div class="cc-chips">${chips.join('')}</div>
           <div class="cc-footer">
@@ -53,6 +73,34 @@ export function renderComplaintCard(c, { underTitle = '' } = {}) {
     </div>`;
 }
 
+export async function translateCardTitle(id, linkEl) {
+  const titleEl = document.getElementById('cc-title-' + id);
+  const cached = cardOriginals[id];
+  if (!titleEl || !cached) return;
+
+  if (linkEl.dataset.translated === '1') {
+    titleEl.textContent = linkEl.dataset.prevText;
+    linkEl.textContent = '🌐 ' + t('cc.translate');
+    linkEl.dataset.translated = '0';
+    return;
+  }
+
+  const prevText = titleEl.textContent;
+  linkEl.textContent = t('detail.translating');
+  try {
+    const result = await api('/translate', {
+      method: 'POST', body: JSON.stringify({ text: cached.text, target_language: currentLang() }),
+    });
+    linkEl.dataset.prevText = prevText;
+    titleEl.textContent = result.translated;
+    linkEl.textContent = '🌐 ' + t('cc.showoriginal');
+    linkEl.dataset.translated = '1';
+  } catch (err) {
+    linkEl.textContent = '🌐 ' + t('cc.translate');
+    showToast(err.message);
+  }
+}
+
 /* ── MY COMPLAINTS ──
    Different card from the public feed: no vote column (you don't vote on your
    own), status is the hero, and the dispute button appears only on resolved
@@ -60,6 +108,7 @@ export function renderComplaintCard(c, { underTitle = '' } = {}) {
 const STATUS_ICON = { open: '◌', in_progress: '↻', resolved: '✓', disputed: '⚑', rejected: '✕' };
 const STATUS_KEY = { open: 'my.open', in_progress: 'my.inprogress', resolved: 'my.resolved', disputed: 'my.disputed', rejected: 'my.rejected' };
 let myStatusFilter = '';
+let trendingAreaFilter = '';
 let myPollTimer = null;
 
 export function renderMyComplaintCard(c) {
@@ -88,6 +137,20 @@ export function setMyStatusFilter(status, btn) {
   loadFeed('mycomplaints');
 }
 
+export function filterTrendingByArea() {
+  const input = document.getElementById('trending-area-filter');
+  trendingAreaFilter = (input.value || '').trim();
+  document.getElementById('trending-clear-filter-btn').style.display = trendingAreaFilter ? 'inline-block' : 'none';
+  loadFeed('trending');
+}
+
+export function clearTrendingAreaFilter() {
+  trendingAreaFilter = '';
+  document.getElementById('trending-area-filter').value = '';
+  document.getElementById('trending-clear-filter-btn').style.display = 'none';
+  loadFeed('trending');
+}
+
 export function stopMyComplaintsPolling() {
   clearInterval(myPollTimer);
   myPollTimer = null;
@@ -102,7 +165,48 @@ function startMyComplaintsPolling() {
   }, 60_000);
 }
 
+export function toggleSchemesPanel() {
+  document.querySelector('.schemes-panel').classList.toggle('collapsed');
+}
+
+let schemesStatsLoaded = false;
+async function loadSchemesStats() {
+  if (schemesStatsLoaded) return; // real nationwide numbers, no need to refetch every trending visit
+  try {
+    const stats = await api('/stats/nationwide');
+    document.getElementById('schemes-stat-resolved').textContent = stats.resolved.toLocaleString();
+    document.getElementById('schemes-stat-pct').textContent = stats.total ? Math.round(stats.resolved / stats.total * 100) + '%' : '0%';
+    document.getElementById('schemes-stat-states').textContent = stats.states_with_patterns.toLocaleString();
+    schemesStatsLoaded = true;
+  } catch (err) { /* schemes panel stats are supplementary — fail quietly */ }
+}
+
+let govtSchemesPageLoaded = false;
+export async function loadGovtSchemesPage() {
+  if (govtSchemesPageLoaded) return;
+  try {
+    const stats = await api('/stats/nationwide');
+    document.getElementById('gs-stat-resolved').textContent = stats.resolved.toLocaleString();
+    document.getElementById('gs-stat-pct').textContent = stats.total ? Math.round(stats.resolved / stats.total * 100) + '%' : '0%';
+    document.getElementById('gs-stat-states').textContent = stats.states_with_patterns.toLocaleString();
+    govtSchemesPageLoaded = true;
+  } catch (err) { /* supplementary — fail quietly */ }
+}
+
+let landingStatsLoaded = false;
+export async function loadLandingStats() {
+  if (landingStatsLoaded) return;
+  try {
+    const stats = await api('/stats/nationwide');
+    document.getElementById('landing-stat-total').textContent = stats.total.toLocaleString();
+    document.getElementById('landing-stat-resolved').textContent = stats.resolved.toLocaleString();
+    document.getElementById('landing-stat-states').textContent = stats.states_with_patterns.toLocaleString();
+    landingStatsLoaded = true;
+  } catch (err) { /* supplementary — fail quietly */ }
+}
+
 export async function loadFeed(page, { silent = false } = {}) {
+  if (page === 'trending') loadSchemesStats();
   const listMap = { home: 'home-feed-list', trending: 'trending-feed-list', nearme: 'nearme-feed-list', mycomplaints: 'mycomplaints-feed-list', myvotes: 'myvotes-feed-list' };
   const scopeMap = { home: 'ward', trending: 'trending', nearme: 'nearby', mycomplaints: 'mine', myvotes: 'voted' };
   const subtitleMap = { mycomplaints: 'my-subtitle', myvotes: 'myvotes-subtitle' };
@@ -118,6 +222,7 @@ export async function loadFeed(page, { silent = false } = {}) {
   }
 
   const params = new URLSearchParams({ scope, sort: scope === 'mine' ? 'recent' : currentSort });
+  if (scope === 'trending' && trendingAreaFilter) params.set('near_text', trendingAreaFilter);
   if (scope === 'mine') {
     if (myStatusFilter) params.set('status_filter', myStatusFilter);
     params.set('per_page', '50');
@@ -141,11 +246,13 @@ export async function loadFeed(page, { silent = false } = {}) {
     });
     return;
   }
+  let knownLocation = true;
   if (page === 'home') {
     if (authUser && authUser.ward) params.set('ward', authUser.ward);
+    knownLocation = !!(authUser && (authUser.ward || authUser.area || authUser.city));
     const title = document.getElementById('home-feed-title');
     if (title) {
-      title.textContent = authUser && (authUser.ward || authUser.area || authUser.city)
+      title.textContent = knownLocation
         ? `Issues in ${[authUser.ward ? 'Ward ' + authUser.ward : null, authUser.area, authUser.city].filter(Boolean).join(' · ')}`
         : t('feed.home.title');
     }
@@ -165,7 +272,13 @@ export async function loadFeed(page, { silent = false } = {}) {
     );
     return;
   }
-  fetchAndRenderFeed(container, params);
+  // The backend deliberately returns nothing for scope=ward with no known
+  // location (rather than an unfiltered nationwide dump) — explain why,
+  // don't just say "no complaints" as if the ward were genuinely empty.
+  const emptyOverride = (page === 'home' && !knownLocation)
+    ? `<div style="padding:32px;text-align:center;color:var(--slate);font-size:13px;">${t('feed.home.nolocation')}<br><a style="color:var(--navy);cursor:pointer;font-weight:600;" onclick="nav('login')">${t('js.signin')}</a> · <a style="color:var(--navy);cursor:pointer;font-weight:600;" onclick="nav('trending')">${t('nav.trending')}</a> · <a style="color:var(--navy);cursor:pointer;font-weight:600;" onclick="nav('nearme')">${t('nav.nearme')}</a></div>`
+    : null;
+  fetchAndRenderFeed(container, params, emptyOverride ? { empty: emptyOverride } : undefined);
 }
 
 async function fetchAndRenderFeed(container, params, { render = renderComplaintCard, empty = null, after = null } = {}) {
@@ -224,3 +337,110 @@ export async function quickVote(id, btn) {
     showToast(err.message);
   }
 }
+
+/* ── RIGHT-PANEL DASHBOARD STATS — real counts, not the old hardcoded demo
+   numbers. Ward if known, else city, else nationwide; same fallback the
+   backend itself applies if we don't pass one. ── */
+export async function loadDashboardStats() {
+  const params = new URLSearchParams();
+  if (authUser && authUser.ward) params.set('ward', authUser.ward);
+  else if (authUser && authUser.city) params.set('city', authUser.city);
+
+  try {
+    const stats = await api('/stats/ward?' + params.toString());
+    document.getElementById('dashboard-stats-label').textContent = t('panel.statslabel', { label: stats.label });
+    document.getElementById('stat-open').textContent = stats.open;
+    document.getElementById('stat-resolved').textContent = stats.resolved;
+    document.getElementById('stat-critical').textContent = stats.critical;
+    document.getElementById('stat-inprogress').textContent = stats.in_progress;
+    document.getElementById('resolution-fill-bar').style.width = stats.resolved_pct + '%';
+    document.getElementById('dashboard-resolution-text').textContent = t('panel.resolutiontext', { pct: stats.resolved_pct });
+  } catch (err) {
+    // Right-panel stats are a nice-to-have, not core functionality — fail
+    // quietly rather than toast an error over a feed page load.
+    document.getElementById('dashboard-stats-label').textContent = t('panel.statslabel', { label: '—' });
+  }
+
+  loadGovtUpdates(params);
+}
+
+const STATUS_ICON_GOVT = { open: '◌', in_progress: '↻', resolved: '✓', disputed: '⚑', rejected: '✕' };
+const STATUS_LABEL_KEY_GOVT = { open: 'my.open', in_progress: 'my.inprogress', resolved: 'my.resolved', disputed: 'my.disputed', rejected: 'my.rejected' };
+
+function relTimeShort(iso) {
+  if (!iso) return '';
+  const secs = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (secs < 3600) return `${Math.max(1, Math.round(secs / 60))} min ago`;
+  if (secs < 86400) return `${Math.round(secs / 3600)} h ago`;
+  const d = Math.round(secs / 86400);
+  return d === 1 ? '1 day ago' : `${d} days ago`;
+}
+
+async function loadGovtUpdates(scopeParams) {
+  const list = document.getElementById('govt-updates-list');
+  if (!list) return;
+  try {
+    const updates = await api('/stats/recent-updates?' + scopeParams.toString());
+    list.innerHTML = updates.length
+      ? updates.map(u => `
+        <div class="govt-item">
+          <div class="govt-title-s">${escapeHtml(u.title)}</div>
+          <div class="govt-meta">${STATUS_ICON_GOVT[u.status] || ''} ${t(STATUS_LABEL_KEY_GOVT[u.status] || 'my.open')} · ${relTimeShort(u.created_at)}</div>
+        </div>`).join('')
+      : `<div style="font-size:11.5px;color:var(--slate-light);padding:4px 0;">${t('panel.noupdates')}</div>`;
+  } catch (err) {
+    list.innerHTML = '';
+  }
+}
+
+/* ── NOTIFICATION BELL ──
+   Real status changes on complaints the signed-in user actually filed —
+   not a hardcoded "3 updates" toast. Guests get an honest sign-in prompt
+   instead of a number that means nothing for an anonymous visitor. */
+export async function toggleNotifMenu(event) {
+  if (event) event.stopPropagation();
+  const menu = document.getElementById('notif-menu');
+  const willOpen = menu.hidden;
+  document.querySelectorAll('.lang-menu, .notif-menu').forEach(m => m.hidden = true);
+  if (!willOpen) return;
+  menu.hidden = false;
+
+  const list = document.getElementById('notif-menu-list');
+  if (!authToken) {
+    list.innerHTML = `<div class="notif-menu-empty notif-menu-guest">${t('notif.guest')} <a onclick="nav('login')">${t('top.signin')}</a></div>`;
+    return;
+  }
+  list.innerHTML = loadingPlaceholder();
+  try {
+    const updates = await api('/stats/my-updates?limit=5');
+    list.innerHTML = updates.length
+      ? updates.map(u => `
+        <div class="notif-menu-item">
+          <div class="notif-menu-item-title">${escapeHtml(u.title)}</div>
+          <div class="notif-menu-item-meta">${STATUS_ICON_GOVT[u.status] || ''} ${t(STATUS_LABEL_KEY_GOVT[u.status] || 'my.open')} · ${relTimeShort(u.created_at)}</div>
+        </div>`).join('')
+      : `<div class="notif-menu-empty">${t('notif.empty')}</div>`;
+    document.getElementById('notif-dot').hidden = true; // seen, now that the panel is open
+  } catch (err) {
+    list.innerHTML = `<div class="notif-menu-empty">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+// Called after login and on initial load for an already-signed-in user —
+// lights the dot only if there's a real status change to see.
+export async function refreshNotifDot() {
+  const dot = document.getElementById('notif-dot');
+  if (!dot) return;
+  if (!authToken) { dot.hidden = true; return; }
+  try {
+    const updates = await api('/stats/my-updates?limit=1');
+    dot.hidden = updates.length === 0;
+  } catch (err) {
+    dot.hidden = true;
+  }
+}
+
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('notif-menu');
+  if (menu && !menu.hidden && !e.target.closest('.notif-wrap')) menu.hidden = true;
+});

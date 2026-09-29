@@ -16,3 +16,11 @@ export function escapeHtml(str) {
   div.textContent = str || '';
   return div.innerHTML;
 }
+
+export function showHelp() {
+  document.getElementById('help-overlay').hidden = false;
+}
+
+export function closeHelp() {
+  document.getElementById('help-overlay').hidden = true;
+}

@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -20,7 +21,7 @@
   <div class="topbar-spacer"></div>
   <div class="topbar-search">
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input placeholder="Search complaints, areas…" data-i18n-placeholder="top.search" />
+    <input id="topbar-search-input" placeholder="Search complaints, areas…" data-i18n-placeholder="top.search" onkeydown="if(event.key==='Enter')topbarSearch(this.value)" />
   </div>
   <div class="lang-wrap">
     <button class="lang-btn" id="topbar-lang-btn" onclick="toggleLangMenu(event)">EN ▾</button>
@@ -31,14 +32,58 @@
       <button data-lang="ta" onclick="setLanguage('ta')">தமிழ்</button>
     </div>
   </div>
-  <button class="notif-btn" onclick="showToast('3 updates on your complaints')">
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-    <div class="notif-dot"></div>
-  </button>
-  <div class="avatar-btn" id="avatar-btn" onclick="nav('login')" title="Login">?</div>
+  <div class="notif-wrap">
+    <button class="notif-btn" onclick="toggleNotifMenu(event)">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <div class="notif-dot" id="notif-dot" hidden></div>
+    </button>
+    <div class="notif-menu" id="notif-menu" hidden>
+      <div class="notif-menu-title" data-i18n="notif.title">Updates on your complaints</div>
+      <div id="notif-menu-list"></div>
+    </div>
+  </div>
+  <div class="avatar-btn" id="avatar-btn" onclick="showHelp()" title="Help">?</div>
   <button class="topbar-portal" id="official-portal-btn" hidden onclick="switchToOfficialMode()">🏛️ Portal</button>
   <button class="topbar-signin" id="signin-topbtn" onclick="nav('login')" data-i18n="top.signin">Sign in</button>
   <button class="topbar-signout" id="signout-topbtn" hidden onclick="doSignOut()" data-i18n="top.signout">Sign out</button>
+</div>
+
+<!-- HELP / FAQ MODAL — available from every page -->
+<div class="help-overlay" id="help-overlay" hidden onclick="if(event.target===this)closeHelp()">
+  <div class="help-card">
+    <div class="help-card-head">
+      <div class="submit-success-title" data-i18n="help.title">Help &amp; FAQ</div>
+      <button class="help-close" onclick="closeHelp()" title="Close">✕</button>
+    </div>
+    <div class="help-qa">
+      <div class="help-q" data-i18n="help.q1">How do I report an issue?</div>
+      <div class="help-a" data-i18n="help.a1">Tap "Report an issue", describe it in any language, add a photo and your location, and submit — no account needed.</div>
+    </div>
+    <div class="help-qa">
+      <div class="help-q" data-i18n="help.q2">How is priority decided?</div>
+      <div class="help-a" data-i18n="help.a2">AI ranks complaints by real urgency — safety risk, season, and how many people report the same problem — not just by votes.</div>
+    </div>
+    <div class="help-qa">
+      <div class="help-q" data-i18n="help.q3">Do I need an account?</div>
+      <div class="help-a" data-i18n="help.a3">No. You can report anonymously and get a complaint ID to track it. Signing in saves every complaint to your account automatically.</div>
+    </div>
+    <div class="help-qa">
+      <div class="help-q" data-i18n="help.q4">How do I report corruption?</div>
+      <div class="help-a" data-i18n="help.a4">Use the dedicated "Report corruption" option — it goes through a separate, careful review channel.</div>
+    </div>
+    <div class="help-contact">
+      <div class="help-contact-title" data-i18n="help.contact.title">Still need help? Contact us</div>
+      <div class="help-contact-row">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        <a href="tel:+911800123456">+91 1800-123-456</a>
+      </div>
+      <div class="help-contact-row">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <a href="mailto:nagarvaani.gdg@gmail.com">nagarvaani.gdg@gmail.com</a>
+      </div>
+    </div>
+    <button class="main-btn" onclick="closeHelp()" data-i18n="help.close">Got it</button>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════
@@ -96,15 +141,15 @@
 ═══════════════════════════════════════════ -->
 <div class="right-panel" id="right-panel">
   <div class="panel-card">
-    <div class="panel-label">Ward 12 · <span data-i18n="panel.thismonth">this month</span></div>
+    <div class="panel-label" id="dashboard-stats-label">—</div>
     <div class="stat-grid">
-      <div class="mini-stat"><div class="mini-stat-num">142</div><div class="mini-stat-label" data-i18n="stat.open">Open</div></div>
-      <div class="mini-stat"><div class="mini-stat-num green">38</div><div class="mini-stat-label" data-i18n="stat.resolved">Resolved</div></div>
-      <div class="mini-stat"><div class="mini-stat-num red">11</div><div class="mini-stat-label" data-i18n="stat.critical">Critical</div></div>
-      <div class="mini-stat"><div class="mini-stat-num">6</div><div class="mini-stat-label" data-i18n="stat.inprogress">In progress</div></div>
+      <div class="mini-stat"><div class="mini-stat-num" id="stat-open">—</div><div class="mini-stat-label" data-i18n="stat.open">Open</div></div>
+      <div class="mini-stat"><div class="mini-stat-num green" id="stat-resolved">—</div><div class="mini-stat-label" data-i18n="stat.resolved">Resolved</div></div>
+      <div class="mini-stat"><div class="mini-stat-num red" id="stat-critical">—</div><div class="mini-stat-label" data-i18n="stat.critical">Critical</div></div>
+      <div class="mini-stat"><div class="mini-stat-num" id="stat-inprogress">—</div><div class="mini-stat-label" data-i18n="stat.inprogress">In progress</div></div>
     </div>
-    <div class="resolution-bar"><div class="resolution-fill"></div></div>
-    <div class="resolution-text" data-i18n="panel.resolutiontext">27% resolved this month</div>
+    <div class="resolution-bar"><div class="resolution-fill" id="resolution-fill-bar" style="width:0%"></div></div>
+    <div class="resolution-text" id="dashboard-resolution-text"></div>
   </div>
   <div class="panel-card" id="mycomplaints-panel" hidden>
     <div class="panel-label" data-i18n="panel.yourcomplaints">Your complaints</div>
@@ -112,6 +157,10 @@
     <div class="my-complaint-item"><div class="my-c-title" data-i18n="demo.mycomplaint2">Broken streetlight near park</div><span class="status-pill status-progress" data-i18n="pill.progress">↻ In progress</span></div>
     <div class="my-complaint-item"><div class="my-c-title" data-i18n="demo.mycomplaint3">Waterlogging near bus stop</div><span class="status-pill status-open" data-i18n="pill.open">◌ Open</span></div>
     <div class="email-note">✉ <span data-i18n="panel.updatesto">Updates to</span> <span id="mycomplaints-panel-email">your email</span></div>
+    <div class="telegram-link-row" id="telegram-link-row">
+      <span id="telegram-link-status">📱 Not linked to Telegram</span>
+      <button class="telegram-link-btn" id="telegram-link-btn" onclick="startTelegramLink()" data-i18n="panel.linktelegram">Link Telegram</button>
+    </div>
   </div>
   <div class="panel-card panel-card-guest" id="mycomplaints-panel-guest">
     <div class="panel-label" data-i18n="panel.yourcomplaints">Your complaints</div>
@@ -120,9 +169,7 @@
   </div>
   <div class="panel-card">
     <div class="panel-label" data-i18n="panel.govtupdates">Govt updates</div>
-    <div class="govt-item"><div class="govt-title-s" data-i18n="demo.govt1.title">Trees trimmed, Aundh sector</div><div class="govt-meta">✓ <span data-i18n="demo.govt1.meta">Done · 2 days ago</span></div></div>
-    <div class="govt-item"><div class="govt-title-s" data-i18n="demo.govt2.title">Drain repair, Ward 12</div><div class="govt-meta">↻ <span data-i18n="demo.govt2.meta">In progress</span></div></div>
-    <div class="govt-item"><div class="govt-title-s" data-i18n="demo.govt3.title">Road patch, Baner Signal 4</div><div class="govt-meta">◌ <span data-i18n="demo.govt3.meta">Scheduled · next week</span></div></div>
+    <div id="govt-updates-list"></div>
   </div>
 </div>
 
@@ -135,7 +182,7 @@
   <div class="hero">
     <div class="hero-pattern"></div>
     <div class="hero-inner">
-      <div class="hero-badge">🇮🇳 <span data-i18n="land.hero.badge">Built for Indian cities &amp; villages</span></div>
+      <div class="hero-badge">🇮🇳 <span data-i18n="land.hero.badge">India reference build — architected to extend to any nation</span></div>
       <h1 class="hero-title"><span data-i18n="land.hero.title1">Your city listens</span><br><span data-i18n="land.hero.title2">when your voice is loud enough.</span></h1>
       <p class="hero-sub" data-i18n="land.hero.sub">
         NagarVaani is where citizens report civic problems — potholes, garbage, broken streetlights,
@@ -146,12 +193,16 @@
         <button class="hero-btn hero-btn-primary" onclick="nav('submit')">📢 <span data-i18n="nav.report">Report an issue</span></button>
         <button class="hero-btn hero-btn-outline" onclick="nav('home')">🧭 <span data-i18n="land.hero.cta.explore">Explore the feed</span></button>
       </div>
-      <div class="hero-stats">
-        <div class="hero-stat"><div class="hero-stat-num">12,400+</div><div class="hero-stat-label" data-i18n="land.hero.stat.reported">Issues reported</div></div>
-        <div class="hero-stat"><div class="hero-stat-num">4,860</div><div class="hero-stat-label" data-i18n="stat.resolved">Resolved</div></div>
-        <div class="hero-stat"><div class="hero-stat-num">180+</div><div class="hero-stat-label" data-i18n="land.hero.stat.wards">Wards &amp; villages</div></div>
-        <div class="hero-stat"><div class="hero-stat-num">4</div><div class="hero-stat-label" data-i18n="land.hero.stat.langs">Languages</div></div>
-      </div>
+    </div>
+  </div>
+
+  <!-- LIVE STATS STRIP — real nationwide numbers, not marketing copy -->
+  <div class="statstrip-section">
+    <div class="statstrip-row">
+      <div class="statstrip-item"><div class="statstrip-num" id="landing-stat-total">—</div><div class="statstrip-label" data-i18n="land.hero.stat.reported">Issues reported</div></div>
+      <div class="statstrip-item"><div class="statstrip-num" id="landing-stat-resolved">—</div><div class="statstrip-label" data-i18n="stat.resolved">Resolved</div></div>
+      <div class="statstrip-item"><div class="statstrip-num" id="landing-stat-states">—</div><div class="statstrip-label" data-i18n="fo.stat.states">States with active patterns</div></div>
+      <div class="statstrip-item"><div class="statstrip-num">4</div><div class="statstrip-label" data-i18n="land.hero.stat.langs">Languages</div></div>
     </div>
   </div>
 
@@ -161,39 +212,39 @@
       <div class="section-title" data-i18n="land.ql.title">What do you want to do?</div>
       <div class="section-sub" data-i18n="land.ql.sub">Everything on NagarVaani, one tap away</div>
     </div>
-    <div class="quicklink-grid">
-      <div class="quicklink-card" onclick="nav('submit')">
-        <div class="ql-emoji">📢</div>
-        <div class="ql-label" data-i18n="nav.report">Report an issue</div>
-      </div>
-      <div class="quicklink-card" onclick="nav('nearme')">
-        <div class="ql-emoji">📍</div>
-        <div class="ql-label" data-i18n="land.ql.nearme">Issues near me</div>
+    <div class="quicklink-grid quicklink-grid-5">
+      <div class="quicklink-card quicklink-card-featured" onclick="nav('submit')">
+        <div class="ql-icon ql-icon-report"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4a1 1 0 001 1h2l4 4V5L6 9H4a1 1 0 00-1 1z"/><path d="M14 8a4 4 0 010 8"/><path d="M17 5a8 8 0 010 14"/></svg></div>
+        <div class="ql-card-foot"><div class="ql-label" data-i18n="nav.report">Report an issue</div><span class="ql-arrow">→</span></div>
       </div>
       <div class="quicklink-card" onclick="nav('trending')">
-        <div class="ql-emoji">🔥</div>
-        <div class="ql-label" data-i18n="nav.trending">Trending</div>
-      </div>
-      <div class="quicklink-card" onclick="nav('mycomplaints')">
-        <div class="ql-emoji">📋</div>
-        <div class="ql-label" data-i18n="nav.mycomplaints">My complaints</div>
+        <div class="ql-icon ql-icon-trending"><svg viewBox="0 0 24 24" fill="white" stroke="none"><path d="M12 2c1 3-2 4-2 7a3 3 0 006 0c0-1-.5-2-1-2.5.8.3 3 2 3 5.5a6 6 0 11-12 0c0-4 2.5-6 4-8.5C10.5 3.5 11.3 2.7 12 2z"/></svg></div>
+        <div class="ql-card-foot"><div class="ql-label" data-i18n="nav.trending">Trending</div><span class="ql-arrow">→</span></div>
       </div>
       <div class="quicklink-card" onclick="nav('corruption')">
-        <div class="ql-emoji">🕵️</div>
-        <div class="ql-label" data-i18n="nav.corruption">Report corruption</div>
+        <div class="ql-icon ql-icon-corruption"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/><path d="M10.5 7.5v3.5M10.5 13.3v.1"/></svg></div>
+        <div class="ql-card-foot"><div class="ql-label" data-i18n="nav.corruption">Report corruption</div><span class="ql-arrow">→</span></div>
       </div>
-      <div class="quicklink-card" onclick="nav('govt')">
-        <div class="ql-emoji">🏛️</div>
-        <div class="ql-label" data-i18n="nav.govt">Govt dashboard</div>
+      <div class="quicklink-card" onclick="nav('govtschemes')">
+        <div class="ql-icon ql-icon-schemes"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10l8-6 8 6v11"/><path d="M3 21h18"/><path d="M9 21v-6h6v6"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg></div>
+        <div class="ql-card-foot"><div class="ql-label" data-i18n="land.ql.schemes">Govt news &amp; schemes</div><span class="ql-arrow">→</span></div>
       </div>
-      <div class="quicklink-card" onclick="toggleLangMenu()">
-        <div class="ql-emoji">🌐</div>
-        <div class="ql-label" data-i18n="land.ql.changelang">Change language</div>
+      <div class="quicklink-card" onclick="nav('orgsupport')">
+        <div class="ql-icon ql-icon-partners"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+        <div class="ql-card-foot"><div class="ql-label" data-i18n="land.ql.orgs">Organizations, Volunteers &amp; NGOs</div><span class="ql-arrow">→</span></div>
       </div>
-      <div class="quicklink-card" onclick="nav('login')">
-        <div class="ql-emoji">👤</div>
-        <div class="ql-label" data-i18n="top.signin">Sign in</div>
+    </div>
+  </div>
+
+  <!-- DARK CTA BANNER -->
+  <div class="ctabanner">
+    <div class="ctabanner-inner">
+      <svg class="ctabanner-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10l8-6 8 6v11"/><path d="M3 21h18"/><path d="M9 21v-6h6v6"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>
+      <div class="ctabanner-text">
+        <div class="ctabanner-title" data-i18n="land.ctabanner.title">Real government schemes are already addressing these issues</div>
+        <div class="ctabanner-sub" data-i18n="land.ctabanner.sub">Swachh Bharat, AMRUT, Jal Jeevan Mission and more — see what's meant to be fixing the problems you report.</div>
       </div>
+      <button class="ctabanner-btn" onclick="nav('govtschemes')"><span data-i18n="land.ctabanner.btn">See government schemes</span> →</button>
     </div>
   </div>
 
@@ -256,7 +307,10 @@
     <div>NagarVaani — नगरवाणी · Your Voice, Your City</div>
     <div class="landing-footer-links">
       <span onclick="nav('about')" data-i18n="nav.about">About</span>
-      <span onclick="nav('govt')" data-i18n="land.footer.officials">For officials</span>
+      <span onclick="nav('track')" data-i18n="track.footerlink">Track a complaint</span>
+      <span onclick="nav('forofficials')" data-i18n="land.footer.officials">For officials</span>
+      <span onclick="nav('orgsupport')" data-i18n="land.footer.getinvolved">Get involved</span>
+      <span onclick="nav('impact')" data-i18n="land.footer.impact">Our impact</span>
       <span onclick="nav('login')" data-i18n="top.signin">Sign in</span>
     </div>
   </div>
@@ -327,6 +381,471 @@
     <p style="font-size:13px;color:var(--slate);" data-i18n="about.contact">
       Questions or feedback? Reach out through the sign-in page, or via the project's repository.
     </p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: FOR OFFICIALS — a public info/marketing page reached from the
+     landing footer, distinct from the actual official dashboard (which
+     needs login + admin approval). Think "for developers" page, not an
+     account shortcut.
+═══════════════════════════════════════════ -->
+<div class="page" id="page-forofficials" style="padding-top:52px;">
+  <div class="hero">
+    <div class="hero-pattern"></div>
+    <div class="hero-inner">
+      <div class="hero-badge">🏛️ <span data-i18n="fo.badge">For government officials</span></div>
+      <h1 class="hero-title" data-i18n="fo.title">Run your ward on evidence, not noise.</h1>
+      <p class="hero-sub" data-i18n="fo.sub">
+        NagarVaani ranks every complaint in your jurisdiction by real urgency — safety risk, season,
+        and repeat pattern — so your queue tells you what to fix first, not who complained loudest.
+      </p>
+      <div class="hero-cta-row">
+        <button class="hero-btn hero-btn-primary" onclick="startOfficialSignup()">🏛️ <span data-i18n="fo.cta.register">Register as an official</span></button>
+        <button class="hero-btn hero-btn-outline" onclick="nav('login')"><span data-i18n="top.signin">Sign in</span></button>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="hero-stat-num" id="fo-stat-total">—</div><div class="hero-stat-label" data-i18n="fo.stat.total">Complaints handled</div></div>
+        <div class="hero-stat"><div class="hero-stat-num" id="fo-stat-resolved">—</div><div class="hero-stat-label" data-i18n="stat.resolved">Resolved</div></div>
+        <div class="hero-stat"><div class="hero-stat-num" id="fo-stat-critical">—</div><div class="hero-stat-label" data-i18n="fo.stat.critical">Critical right now</div></div>
+        <div class="hero-stat"><div class="hero-stat-num" id="fo-stat-states">—</div><div class="hero-stat-label" data-i18n="fo.stat.states">States with active patterns</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title" data-i18n="fo.features.title">What you get as an official</div>
+      <div class="section-sub" data-i18n="fo.features.sub">Live across every jurisdiction level — ward, city, state, or central</div>
+    </div>
+    <div class="quicklink-grid" style="grid-template-columns:repeat(3,1fr);">
+      <div class="quicklink-card" style="cursor:default;aspect-ratio:auto;padding:20px 16px;align-items:flex-start;text-align:left;gap:10px;">
+        <div class="ql-icon ql-icon-report"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+        <div><div class="ql-label" style="font-size:14px;" data-i18n="fo.feat1.title">AI-priority queue</div><div style="font-size:12.5px;color:var(--slate);margin-top:4px;" data-i18n="fo.feat1.text">Complaints ranked by severity, season and repeat pattern — not vote count.</div></div>
+      </div>
+      <div class="quicklink-card" style="cursor:default;aspect-ratio:auto;padding:20px 16px;align-items:flex-start;text-align:left;gap:10px;">
+        <div class="ql-icon ql-icon-govt"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/><path d="M4 10h16"/></svg></div>
+        <div><div class="ql-label" style="font-size:14px;" data-i18n="fo.feat2.title">Jurisdiction dashboard</div><div style="font-size:12.5px;color:var(--slate);margin-top:4px;" data-i18n="fo.feat2.text">See only what's yours — ward, city, state, or nationwide by level.</div></div>
+      </div>
+      <div class="quicklink-card" style="cursor:default;aspect-ratio:auto;padding:20px 16px;align-items:flex-start;text-align:left;gap:10px;">
+        <div class="ql-icon ql-icon-corruption"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/></svg></div>
+        <div><div class="ql-label" style="font-size:14px;" data-i18n="fo.feat3.title">Investment flags</div><div style="font-size:12.5px;color:var(--slate);margin-top:4px;" data-i18n="fo.feat3.text">Flag infrastructure-level gaps for senior or state-level review.</div></div>
+      </div>
+      <div class="quicklink-card" style="cursor:default;aspect-ratio:auto;padding:20px 16px;align-items:flex-start;text-align:left;gap:10px;">
+        <div class="ql-icon ql-icon-nearme"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-7.58 7-12a7 7 0 10-14 0c0 4.42 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg></div>
+        <div><div class="ql-label" style="font-size:14px;" data-i18n="fo.feat4.title">Hotspot map</div><div style="font-size:12.5px;color:var(--slate);margin-top:4px;" data-i18n="fo.feat4.text">See where problems cluster geographically, not just in a list.</div></div>
+      </div>
+      <div class="quicklink-card" style="cursor:default;aspect-ratio:auto;padding:20px 16px;align-items:flex-start;text-align:left;gap:10px;">
+        <div class="ql-icon ql-icon-lang"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 010 18a14 14 0 010-18z"/></svg></div>
+        <div><div class="ql-label" style="font-size:14px;" data-i18n="fo.feat5.title">Multi-language intake</div><div style="font-size:12.5px;color:var(--slate);margin-top:4px;" data-i18n="fo.feat5.text">Citizens report in Hindi, Marathi, Tamil or English — you read it in yours.</div></div>
+      </div>
+      <div class="quicklink-card" style="cursor:default;aspect-ratio:auto;padding:20px 16px;align-items:flex-start;text-align:left;gap:10px;">
+        <div class="ql-icon ql-icon-mycomplaints"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3a1 1 0 011-1h4a1 1 0 011 1v1"/><path d="M8 10h8M8 14h8M8 18h5"/></svg></div>
+        <div><div class="ql-label" style="font-size:14px;" data-i18n="fo.feat6.title">Full audit trail</div><div style="font-size:12.5px;color:var(--slate);margin-top:4px;" data-i18n="fo.feat6.text">Every status change is logged and visible to the citizen who filed it.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section section-alt">
+    <div class="section-head">
+      <div class="section-title" data-i18n="fo.whatsnew.title">Recently added for officials</div>
+      <div class="section-sub" data-i18n="fo.whatsnew.sub">This platform ships fast — here's what's new</div>
+    </div>
+    <div style="max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <span style="color:var(--success);font-size:16px;">●</span>
+        <div><strong data-i18n="fo.new1.title">Admin-verified official accounts</strong><div style="font-size:12.5px;color:var(--slate);margin-top:2px;" data-i18n="fo.new1.text">Signup now requires a work email and admin approval before dashboard access is granted.</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <span style="color:var(--success);font-size:16px;">●</span>
+        <div><strong data-i18n="fo.new2.title">Live jurisdiction stats</strong><div style="font-size:12.5px;color:var(--slate);margin-top:2px;" data-i18n="fo.new2.text">Ward, city and state dashboards now reflect real complaint data, updated as it comes in.</div></div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-start;">
+        <span style="color:var(--success);font-size:16px;">●</span>
+        <div><strong data-i18n="fo.new3.title">Investment flag review queue</strong><div style="font-size:12.5px;color:var(--slate);margin-top:2px;" data-i18n="fo.new3.text">Flag infrastructure-level complaints so a senior or state-level reviewer can act on them.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section" style="text-align:center;">
+    <div class="section-title" data-i18n="fo.bottomcta.title">Ready to bring your ward onto NagarVaani?</div>
+    <div class="hero-cta-row" style="justify-content:center;margin-top:16px;">
+      <button class="hero-btn hero-btn-primary" style="background:var(--saffron);color:var(--navy);" onclick="startOfficialSignup()" data-i18n="fo.cta.register">Register as an official</button>
+      <button class="hero-btn hero-btn-outline" style="border-color:var(--border);color:var(--navy);" onclick="nav('login')" data-i18n="top.signin">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: OUR IMPACT — standalone (not a tab inside another page). Real
+     resolved-complaint data now; honest "coming soon" placeholders for
+     impact dimensions beyond complaints (tree planting, recycling) that
+     the platform doesn't track yet.
+═══════════════════════════════════════════ -->
+<div class="page" id="page-impact">
+  <div class="nl-masthead" style="background-image:url('https://images.pexels.com/photos/11130997/pexels-photo-11130997.jpeg?auto=compress&cs=tinysrgb&w=1200');">
+    <div class="nl-masthead-eyebrow" data-i18n="impact.masthead.eyebrow">Impact reporting</div>
+    <div class="nl-masthead-title" data-i18n="impact.title">Our Impact</div>
+  </div>
+  <div class="nl-contactbar" data-i18n="impact.contactbar">Real data from NagarVaani's own database — updated as it comes in</div>
+
+  <div class="section">
+    <p style="max-width:720px;margin:0 auto 28px;font-size:13.5px;color:var(--text-soft);line-height:1.7;text-align:center;" data-i18n="impact.intro">
+      NagarVaani isn't just a complaint box — it's meant to measure real change. Here's what's actually been
+      verified as fixed, and what we're building next to track beyond complaints alone.
+    </p>
+    <div class="impact-block cream">
+      <div class="impact-block-text">
+        <div class="impact-block-num" id="impact-stat-resolved">—</div>
+        <div class="impact-block-label" data-i18n="impact.stat.resolved">Complaints resolved</div>
+        <div class="impact-block-desc" data-i18n="impact.stat.resolved.desc">Verified fixed by officials, visible to the citizen who reported it.</div>
+      </div>
+      <div class="impact-block-img"><img src="https://images.pexels.com/photos/11529940/pexels-photo-11529940.jpeg?auto=compress&cs=tinysrgb&w=600" alt="" loading="lazy" /></div>
+    </div>
+    <div class="impact-block navy">
+      <div class="impact-block-text">
+        <div class="impact-block-num" id="impact-stat-critical">—</div>
+        <div class="impact-block-label" data-i18n="impact.stat.critical">Critical issues surfaced</div>
+        <div class="impact-block-desc" data-i18n="impact.stat.critical.desc">High-severity reports pushed to the top of officials' queues right now.</div>
+      </div>
+      <div class="impact-block-img"><img src="https://images.pexels.com/photos/11115607/pexels-photo-11115607.jpeg?auto=compress&cs=tinysrgb&w=600" alt="" loading="lazy" /></div>
+    </div>
+    <div class="impact-block cream">
+      <div class="impact-block-text">
+        <div class="impact-block-num" style="font-size:26px;" data-i18n="impact.comingsoon.trees">Coming soon</div>
+        <div class="impact-block-label" data-i18n="impact.stat.trees">Trees planted</div>
+        <div class="impact-block-desc" data-i18n="impact.stat.trees.desc">We don't track tree-planting drives yet — this is on our roadmap, not a real number.</div>
+      </div>
+      <div class="impact-block-img"><img src="https://images.pexels.com/photos/13790935/pexels-photo-13790935.jpeg?auto=compress&cs=tinysrgb&w=600" alt="" loading="lazy" /></div>
+    </div>
+    <div class="impact-block navy">
+      <div class="impact-block-text">
+        <div class="impact-block-num" style="font-size:26px;" data-i18n="impact.comingsoon.recycled">Coming soon</div>
+        <div class="impact-block-label" data-i18n="impact.stat.recycled">Waste recycled / diverted</div>
+        <div class="impact-block-desc" data-i18n="impact.stat.recycled.desc">Also not tracked yet — a planned category for recycling and cleanup drives beyond complaint resolution.</div>
+      </div>
+      <div class="impact-block-img"><img src="https://images.pexels.com/photos/13183243/pexels-photo-13183243.jpeg?auto=compress&cs=tinysrgb&w=600" alt="" loading="lazy" /></div>
+    </div>
+  </div>
+
+  <div class="section section-alt">
+    <div style="max-width:760px;margin:0 auto;">
+      <div class="section-head" style="text-align:left;">
+        <div class="section-title" data-i18n="impact.stories.title">Real Resolved Complaints</div>
+        <div class="section-sub" data-i18n="gi.happy.p">These are real complaints from NagarVaani's own database that officials have marked resolved — not invented quotes. As more get resolved, this list grows.</div>
+      </div>
+      <div id="gi-happy-quote"></div>
+      <div id="gi-happy-list">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: ORGANIZATIONS, VOLUNTEERS & NGOS — standalone. Volunteering and
+     org partnerships live together here since they're the same "who
+     supports this" story; nothing here routes back into a shared tab hub.
+═══════════════════════════════════════════ -->
+<div class="page" id="page-orgsupport">
+  <div class="nl-masthead" style="background-image:url('https://images.pexels.com/photos/12079506/pexels-photo-12079506.jpeg?auto=compress&cs=tinysrgb&w=1200');">
+    <div class="nl-masthead-eyebrow" data-i18n="org.masthead.eyebrow">Community &amp; support</div>
+    <div class="nl-masthead-title" data-i18n="org.title">Organizations, Volunteers &amp; NGOs</div>
+  </div>
+  <div class="nl-contactbar" data-i18n="org.contactbar">nagarvaani.gdg@gmail.com · Real inquiries welcome</div>
+
+  <div class="section">
+    <p style="max-width:720px;margin:0 auto;font-size:13.5px;color:var(--text-soft);line-height:1.7;text-align:center;" data-i18n="org.intro">
+      NagarVaani doesn't have any corporate or NGO partners yet. Here's how to become one — as an individual
+      volunteer or as an organization — and what real support will look like here once it exists.
+    </p>
+  </div>
+
+  <!-- Supporter strip — clearly a concept, not real logos -->
+  <div class="supporter-strip">
+    <div class="supporter-track" id="supporter-track"></div>
+  </div>
+
+  <div class="section">
+    <div class="gi-partner-cta-row">
+      <div class="gi-partner-cta">
+        <div class="gi-icon" style="background:#8B5CF6;">🙋</div>
+        <div class="gi-label" data-i18n="gi.partners.individual">As an individual</div>
+        <div class="gi-desc" data-i18n="org.vol.desc">Verify complaints on the ground, translate reports, or spread the word — no commitment beyond your time.</div>
+      </div>
+      <div class="gi-partner-cta">
+        <div class="gi-icon" style="background:#059669;">🏢</div>
+        <div class="gi-label" data-i18n="gi.partners.org">As an organization</div>
+        <div class="gi-desc" data-i18n="gi.partners.org.desc">NGO, business, or corporate CSR team.</div>
+      </div>
+    </div>
+
+    <div style="max-width:560px;margin:0 auto;">
+      <div class="form-group"><label class="form-label" data-i18n="auth.fullname">Full name</label><input class="form-input" id="gi-vol-name" placeholder="Your name" /></div>
+      <div class="form-group"><label class="form-label" data-i18n="auth.email">Email</label><input class="form-input" type="email" id="gi-vol-email" placeholder="your@email.com" /></div>
+      <div class="form-group"><label class="form-label" data-i18n="gi.vol.city">City / area</label><input class="form-input" id="gi-vol-city" placeholder="e.g. Pune" /></div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="gi.vol.interest">Where you'd like to help</label>
+        <select class="form-input" id="gi-vol-interest">
+          <option value="Verification" data-i18n="gi.vol.opt.verify">Verifying reported complaints</option>
+          <option value="Translation" data-i18n="gi.vol.opt.translate">Translation</option>
+          <option value="Outreach" data-i18n="gi.vol.opt.outreach">Community outreach</option>
+          <option value="Tech" data-i18n="gi.vol.opt.tech">Tech / development</option>
+        </select>
+      </div>
+      <button class="main-btn" onclick="sendVolunteerInterest()" data-i18n="gi.vol.send">Send interest by email</button>
+      <div class="form-hint" style="margin-top:8px;text-align:center;" data-i18n="gi.vol.hint">Opens your email app with this addressed to nagarvaani.gdg@gmail.com — nothing is sent automatically.</div>
+      <button class="off-btn" style="width:100%;margin-top:20px;padding:10px;" onclick="sendOrgPartnerInterest()" data-i18n="gi.partners.org.cta">Reach out as an organization</button>
+    </div>
+  </div>
+
+  <div class="section section-alt">
+    <div class="gi-demo-banner" style="max-width:820px;margin:0 auto 20px;" data-i18n="gi.demo.banner">
+      ⚠ Example only — no real partnerships exist yet. These are placeholder cards showing how real partners will be featured.
+    </div>
+    <div class="gi-partner-grid" style="max-width:820px;">
+      <div class="gi-partner-card">
+        <span class="gi-demo-ribbon" data-i18n="gi.demo.ribbon">DEMO</span>
+        <div class="gi-partner-logo" style="background:#059669;">GS</div>
+        <div class="gi-partner-name" data-i18n="gi.demo.ngo1.name">GreenStep Foundation</div>
+        <div class="gi-partner-type" data-i18n="gi.demo.ngo1.type">NGO partner (example)</div>
+      </div>
+      <div class="gi-partner-card">
+        <span class="gi-demo-ribbon" data-i18n="gi.demo.ribbon">DEMO</span>
+        <div class="gi-partner-logo" style="background:#0891B2;">CC</div>
+        <div class="gi-partner-name" data-i18n="gi.demo.ngo2.name">Clean City Co-op</div>
+        <div class="gi-partner-type" data-i18n="gi.demo.ngo2.type">Community partner (example)</div>
+      </div>
+      <div class="gi-partner-card">
+        <span class="gi-demo-ribbon" data-i18n="gi.demo.ribbon">DEMO</span>
+        <div class="gi-partner-logo" style="background:#8B5CF6;">BR</div>
+        <div class="gi-partner-name" data-i18n="gi.demo.corp1.name">BuildRight Infra</div>
+        <div class="gi-partner-type" data-i18n="gi.demo.corp1.type">Corporate CSR partner (example)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Events — newsletter date-badge cards, clearly example -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title" data-i18n="org.events.title">Upcoming Events &amp; Programs</div>
+      <div class="gi-demo-banner" style="max-width:600px;margin:8px auto 0;" data-i18n="org.events.banner">Example layout — real events will replace these once scheduled.</div>
+    </div>
+    <div class="event-card">
+      <div class="event-date-badge"><div class="month" data-i18n="org.event1.month">OCT</div><div class="day">25</div></div>
+      <div class="event-body">
+        <div class="event-title" data-i18n="org.event1.title">Ward Cleanup Drive (example)</div>
+        <div class="event-text" data-i18n="org.event1.text">A neighborhood cleanup and drain-clearing session — bring gloves, we'll bring the bags.</div>
+      </div>
+      <div class="event-photo"><img src="https://images.pexels.com/photos/11583513/pexels-photo-11583513.jpeg?auto=compress&cs=tinysrgb&w=400" alt="" loading="lazy" /></div>
+    </div>
+    <div class="event-card">
+      <div class="event-photo"><img src="https://images.pexels.com/photos/12079506/pexels-photo-12079506.jpeg?auto=compress&cs=tinysrgb&w=400" alt="" loading="lazy" /></div>
+      <div class="event-date-badge"><div class="month" data-i18n="org.event2.month">NOV</div><div class="day">10</div></div>
+      <div class="event-body">
+        <div class="event-title" data-i18n="org.event2.title">Volunteer Info Session (example)</div>
+        <div class="event-text" data-i18n="org.event2.text">New to volunteering with us? This session walks through current opportunities and how to get involved.</div>
+      </div>
+    </div>
+
+    <div class="nl-highlight-box">
+      <div class="nl-highlight-box-img"><img src="https://images.pexels.com/photos/13183243/pexels-photo-13183243.jpeg?auto=compress&cs=tinysrgb&w=300" alt="" loading="lazy" /></div>
+      <div>
+        <div class="nl-eyebrow" data-i18n="org.spotlight.eyebrow">What volunteers do</div>
+        <p class="nl-body" data-i18n="org.spotlight.text">
+          From sorting recyclables at collection points to verifying a reported pothole is really fixed, volunteers
+          are how NagarVaani stays honest — real people checking real claims, not just an app trusting itself.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Creative gallery — big showcase cards, not a boring stacked grid -->
+  <div class="section section-alt">
+    <div class="gi-ig-banner">
+      <div style="font-size:22px;">📸</div>
+      <div>
+        <div style="font-weight:700;color:var(--navy);font-size:13.5px;" data-i18n="gi.gallery.tag.title">Tag us and we'll notice</div>
+        <div style="font-size:12.5px;color:var(--slate);margin-top:2px;" data-i18n="gi.gallery.tag.text">
+          Tag @NagarVaani_India on Instagram with photos or videos of an issue or your civic action — cleanup drives,
+          tree planting, anything that moved your ward forward. We monitor tags and act on them fast, the same way
+          we already do for reports sent to @NagarVaaniBot on Telegram.
+        </div>
+      </div>
+    </div>
+
+    <div class="gi-gallery-section-head">
+      <div class="gi-gallery-section-title" data-i18n="gi.gallery.ba.title">Before &amp; after</div>
+      <div class="gi-demo-banner" style="margin-bottom:0;" data-i18n="gi.demo.ba.banner">Example layout using stock photography — real before/after pairs will replace these once verified.</div>
+    </div>
+    <div class="gi-showcase" id="gi-ba-grid"></div>
+
+    <div class="gi-gallery-section-head">
+      <div class="gi-gallery-section-title" data-i18n="gi.gallery.shoutout.title">Volunteer shoutouts</div>
+      <div class="gi-demo-banner" style="margin-bottom:0;" data-i18n="gi.gallery.shoutout.sub">Clean up your area, share a before/after — and we'll repost it here and mention you.</div>
+    </div>
+    <div class="gi-showcase" id="gi-shoutout-grid"></div>
+
+    <div class="gi-gallery-section-head">
+      <div class="gi-gallery-section-title" data-i18n="gi.gallery.community.title">Community snapshots</div>
+      <div class="gi-demo-banner" style="margin-bottom:0;" data-i18n="gi.demo.gallery.banner">Example layout below using stock photography — this is what the gallery will look like once real tagged posts come in.</div>
+    </div>
+    <div class="gi-showcase" id="gi-ig-grid"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: GOVERNMENT SCHEMES — standalone reference page (the landing
+     quicklink target), separate from the inline panel on Trending.
+═══════════════════════════════════════════ -->
+<div class="page" id="page-govtschemes">
+  <!-- NEWSLETTER MASTHEAD -->
+  <div class="nl-masthead" style="background-image:url('https://images.pexels.com/photos/10382550/pexels-photo-10382550.jpeg?auto=compress&cs=tinysrgb&w=1200');">
+    <div class="nl-masthead-eyebrow" data-i18n="gs.masthead.eyebrow">Government news &amp; updates</div>
+    <div class="nl-masthead-title" data-i18n="gs.title">Government News, Letters &amp; Schemes</div>
+  </div>
+  <div class="nl-contactbar" data-i18n="gs.contactbar">Independent · Not affiliated with any government body · For reference only</div>
+
+  <!-- CURRENT EFFORTS — newsletter intro, with the framed inset photo and
+       highlight box the reference template uses, not just plain text. -->
+  <div class="section">
+    <div class="nl-2col">
+      <div class="nl-inset-photo">
+        <img src="https://images.pexels.com/photos/11440623/pexels-photo-11440623.jpeg?auto=compress&cs=tinysrgb&w=600" alt="" loading="lazy" />
+        <div class="nl-inset-caption">
+          <div class="nl-inset-caption-label" data-i18n="gs.inside.label">Inside:</div>
+          <div class="nl-inset-caption-text" data-i18n="gs.inside.text">The schemes meant to fix drainage, garbage, water, power and roads — and the ministry directory to reach each one directly.</div>
+        </div>
+      </div>
+      <div>
+        <div class="nl-eyebrow" data-i18n="gs.intro.eyebrow">Live status</div>
+        <div class="nl-headline" data-i18n="gs.intro.title">Current Efforts</div>
+        <p class="nl-body" data-i18n="gs.intro.text">
+          Real, well-known central government schemes already exist to tackle the same issues citizens report on
+          NagarVaani — drainage, garbage, water supply, electricity, roads and corruption. Below is what's meant to
+          be fixing them, and — at the end of this page — exactly who to reach for each one.
+        </p>
+      </div>
+    </div>
+    <div class="nl-photo-row">
+      <img src="https://images.pexels.com/photos/13232597/pexels-photo-13232597.jpeg?auto=compress&cs=tinysrgb&w=900" alt="" loading="lazy" />
+    </div>
+    <div class="nl-highlight-box">
+      <div class="nl-highlight-box-img"><img src="https://images.pexels.com/photos/10382550/pexels-photo-10382550.jpeg?auto=compress&cs=tinysrgb&w=300" alt="" loading="lazy" /></div>
+      <div>
+        <div class="nl-eyebrow" data-i18n="gs.onplatform.eyebrow">On this platform</div>
+        <div class="schemes-stat-row" style="border-bottom:none;padding-bottom:0;">
+          <div class="schemes-stat"><div class="schemes-stat-num" id="gs-stat-resolved">—</div><div class="schemes-stat-label" data-i18n="stat.resolved">Resolved</div></div>
+          <div class="schemes-stat"><div class="schemes-stat-num" id="gs-stat-pct">—</div><div class="schemes-stat-label" data-i18n="schemes.stat.pct">Resolution rate</div></div>
+          <div class="schemes-stat"><div class="schemes-stat-num" id="gs-stat-states">—</div><div class="schemes-stat-label" data-i18n="fo.stat.states">States with active patterns</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section section-alt">
+    <div style="max-width:760px;margin:0 auto;">
+      <div class="schemes-list">
+        <div class="scheme-row">
+          <div class="scheme-name" data-i18n="schemes.sbm.name">Swachh Bharat Mission (Urban) 2.0</div>
+          <div class="scheme-desc" data-i18n="schemes.sbm.desc">National sanitation and garbage-management mission — covers waste collection, processing and clean-city ratings.</div>
+        </div>
+        <div class="scheme-row">
+          <div class="scheme-name" data-i18n="schemes.amrut.name">AMRUT 2.0</div>
+          <div class="scheme-desc" data-i18n="schemes.amrut.desc">Atal Mission for Rejuvenation and Urban Transformation — funds water supply and sewerage/drainage infrastructure in cities.</div>
+        </div>
+        <div class="scheme-row">
+          <div class="scheme-name" data-i18n="schemes.jjm.name">Jal Jeevan Mission</div>
+          <div class="scheme-desc" data-i18n="schemes.jjm.desc">Aims to provide piped drinking water to every rural household across India.</div>
+        </div>
+        <div class="scheme-row">
+          <div class="scheme-name" data-i18n="schemes.saubhagya.name">Saubhagya (Pradhan Mantri Sahaj Bijli Har Ghar Yojana)</div>
+          <div class="scheme-desc" data-i18n="schemes.saubhagya.desc">Household electrification scheme aimed at universal access to electricity.</div>
+        </div>
+        <div class="scheme-row">
+          <div class="scheme-name" data-i18n="schemes.smartcities.name">Smart Cities Mission</div>
+          <div class="scheme-desc" data-i18n="schemes.smartcities.desc">Funds core urban infrastructure and technology-enabled governance across selected Indian cities.</div>
+        </div>
+        <div class="scheme-row">
+          <div class="scheme-name" data-i18n="schemes.cvc.name">Central Vigilance Commission</div>
+          <div class="scheme-desc" data-i18n="schemes.cvc.desc">The apex body for addressing corruption in central government offices and public sector undertakings.</div>
+        </div>
+      </div>
+      <div class="schemes-disclaimer" style="margin-top:20px;" data-i18n="schemes.disclaimer">NagarVaani is independent and not affiliated with any of these schemes — listed here for reference only.</div>
+    </div>
+  </div>
+
+  <!-- MINISTRY DIRECTORY — real official links, one per issue category -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title" data-i18n="gs.ministry.title">Ministry Directory</div>
+      <div class="section-sub" data-i18n="gs.ministry.sub">The real government body responsible for each issue you can report here</div>
+    </div>
+    <div class="ministry-grid">
+      <div class="ministry-card">
+        <div class="ministry-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div>
+        <div class="ministry-cat" data-i18n="cat.garbage">Garbage</div>
+        <div class="ministry-name" data-i18n="gs.ministry.sbm">Swachh Bharat Mission — Dept. of Drinking Water &amp; Sanitation</div>
+        <a class="ministry-link" href="https://swachhbharatmission.ddws.gov.in" target="_blank" rel="noopener">swachhbharatmission.ddws.gov.in →</a>
+      </div>
+      <div class="ministry-card">
+        <div class="ministry-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.7s6 6 6 10.3a6 6 0 01-12 0c0-4.3 6-10.3 6-10.3z"/></svg></div>
+        <div class="ministry-cat" data-i18n="cat.water_supply">Water supply / Drainage</div>
+        <div class="ministry-name" data-i18n="gs.ministry.jjm">Jal Jeevan Mission — Ministry of Jal Shakti</div>
+        <a class="ministry-link" href="https://jaljeevanmission.gov.in" target="_blank" rel="noopener">jaljeevanmission.gov.in →</a>
+      </div>
+      <div class="ministry-card">
+        <div class="ministry-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg></div>
+        <div class="ministry-cat" data-i18n="cat.electricity">Electricity</div>
+        <div class="ministry-name" data-i18n="gs.ministry.power">Ministry of Power</div>
+        <a class="ministry-link" href="https://powermin.gov.in" target="_blank" rel="noopener">powermin.gov.in →</a>
+      </div>
+      <div class="ministry-card">
+        <div class="ministry-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M6 19V9l6-5 6 5v10"/></svg></div>
+        <div class="ministry-cat" data-i18n="cat.road">Road</div>
+        <div class="ministry-name" data-i18n="gs.ministry.morth">Ministry of Road Transport &amp; Highways</div>
+        <a class="ministry-link" href="https://morth.nic.in" target="_blank" rel="noopener">morth.nic.in →</a>
+      </div>
+      <div class="ministry-card">
+        <div class="ministry-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 21h16L12 2z"/><path d="M12 21V12"/></svg></div>
+        <div class="ministry-cat" data-i18n="cat.tree_hazard">Tree / Environment</div>
+        <div class="ministry-name" data-i18n="gs.ministry.moefcc">Ministry of Environment, Forest &amp; Climate Change</div>
+        <a class="ministry-link" href="https://moefcc.gov.in" target="_blank" rel="noopener">moefcc.gov.in →</a>
+      </div>
+      <div class="ministry-card">
+        <div class="ministry-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg></div>
+        <div class="ministry-cat" data-i18n="nav.corruption">Corruption</div>
+        <div class="ministry-name" data-i18n="gs.ministry.cvc">Central Vigilance Commission</div>
+        <a class="ministry-link" href="https://cvc.gov.in" target="_blank" rel="noopener">cvc.gov.in →</a>
+      </div>
+      <div class="ministry-card">
+        <div class="ministry-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M4 21V10l8-6 8 6v11"/><path d="M9 21v-6h6v6"/></svg></div>
+        <div class="ministry-cat" data-i18n="gs.ministry.urbancat">Urban infrastructure</div>
+        <div class="ministry-name" data-i18n="gs.ministry.mohua">Ministry of Housing &amp; Urban Affairs (Smart Cities Mission)</div>
+        <a class="ministry-link" href="https://mohua.gov.in" target="_blank" rel="noopener">mohua.gov.in →</a>
+      </div>
+    </div>
+    <div class="schemes-disclaimer" style="text-align:center;margin-top:16px;" data-i18n="gs.ministry.disclaimer">Official government links, provided for reference — NagarVaani has no affiliation with these ministries.</div>
+  </div>
+
+  <div class="section" style="text-align:center;">
+    <button class="hero-btn hero-btn-primary" style="background:var(--saffron);color:var(--navy);" onclick="nav('trending')" data-i18n="gs.cta.seetrending">See these issues on Trending →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: TRACK A COMPLAINT BY ID
+═══════════════════════════════════════════ -->
+<div class="page" id="page-track" style="padding-top:52px;">
+  <div class="section" style="max-width:480px;">
+    <div class="section-head" style="text-align:left;">
+      <div class="section-title" data-i18n="track.title">Track your complaint</div>
+      <div class="section-sub" data-i18n="track.sub">Paste the complaint ID you were given after submitting — this works whether or not you're signed in.</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" data-i18n="track.label">Complaint ID</label>
+      <input class="form-input" id="track-id-input" placeholder="e.g. 71f0bc91-874a-407f-b9d0-e56a2d9e149f"
+        onkeydown="if(event.key==='Enter')trackComplaintById()" />
+    </div>
+    <button class="main-btn" onclick="trackComplaintById()" data-i18n="track.button">Track</button>
   </div>
 </div>
 
@@ -457,8 +976,8 @@
 <!-- ═══════════════════════════════════════════
      PAGE: TRENDING
 ═══════════════════════════════════════════ -->
-<div class="page three-panel" id="page-trending">
-  <div class="center-feed">
+<div class="page" id="page-trending" style="padding-top:52px;">
+  <div class="trending-standalone-feed">
     <div class="trending-banner">
       <div class="trending-banner-icon">🌐</div>
       <div>
@@ -466,6 +985,49 @@
         <div class="trending-banner-sub" data-i18n="trending.sub">Vote for anyone's complaint — not just your ward. Your vote counts as a solidarity signal from outside the area.</div>
       </div>
     </div>
+
+    <div class="schemes-panel">
+      <div class="schemes-panel-head" onclick="toggleSchemesPanel()">
+        <div>
+          <span class="schemes-live-dot"></span>
+          <span class="schemes-panel-title" data-i18n="schemes.title">Government efforts on these issues</span>
+        </div>
+        <span class="schemes-panel-toggle" id="schemes-panel-toggle">▾</span>
+      </div>
+      <div class="schemes-stat-row">
+        <div class="schemes-stat"><div class="schemes-stat-num" id="schemes-stat-resolved">—</div><div class="schemes-stat-label" data-i18n="stat.resolved">Resolved</div></div>
+        <div class="schemes-stat"><div class="schemes-stat-num" id="schemes-stat-pct">—</div><div class="schemes-stat-label" data-i18n="schemes.stat.pct">Resolution rate</div></div>
+        <div class="schemes-stat"><div class="schemes-stat-num" id="schemes-stat-states">—</div><div class="schemes-stat-label" data-i18n="fo.stat.states">States with active patterns</div></div>
+      </div>
+      <div class="schemes-list" id="schemes-list">
+        <div class="scheme-row">
+          <div class="scheme-name" data-i18n="schemes.sbm.name">Swachh Bharat Mission (Urban) 2.0</div>
+          <div class="scheme-desc" data-i18n="schemes.sbm.desc">National sanitation and garbage-management mission — covers waste collection, processing and clean-city ratings.</div>
+        </div>
+        <div class="scheme-row">
+          <div class="scheme-name" data-i18n="schemes.amrut.name">AMRUT 2.0</div>
+          <div class="scheme-desc" data-i18n="schemes.amrut.desc">Atal Mission for Rejuvenation and Urban Transformation — funds water supply and sewerage/drainage infrastructure in cities.</div>
+        </div>
+        <div class="scheme-row">
+          <div class="scheme-name" data-i18n="schemes.jjm.name">Jal Jeevan Mission</div>
+          <div class="scheme-desc" data-i18n="schemes.jjm.desc">Aims to provide piped drinking water to every rural household across India.</div>
+        </div>
+        <div class="scheme-row">
+          <div class="scheme-name" data-i18n="schemes.saubhagya.name">Saubhagya (Pradhan Mantri Sahaj Bijli Har Ghar Yojana)</div>
+          <div class="scheme-desc" data-i18n="schemes.saubhagya.desc">Household electrification scheme aimed at universal access to electricity.</div>
+        </div>
+        <div class="scheme-row">
+          <div class="scheme-name" data-i18n="schemes.smartcities.name">Smart Cities Mission</div>
+          <div class="scheme-desc" data-i18n="schemes.smartcities.desc">Funds core urban infrastructure and technology-enabled governance across selected Indian cities.</div>
+        </div>
+        <div class="scheme-row">
+          <div class="scheme-name" data-i18n="schemes.cvc.name">Central Vigilance Commission</div>
+          <div class="scheme-desc" data-i18n="schemes.cvc.desc">The apex body for addressing corruption in central government offices and public sector undertakings.</div>
+        </div>
+      </div>
+      <div class="schemes-disclaimer" data-i18n="schemes.disclaimer">NagarVaani is independent and not affiliated with any of these schemes — listed here for reference only.</div>
+    </div>
+
     <div class="feed-header">
       <div class="feed-title" data-i18n="trending.feed">Top issues across India right now</div>
       <div class="sort-group">
@@ -473,6 +1035,13 @@
         <button class="sort-btn" data-sort="votes" onclick="sortToggle(this)" data-i18n="sort.votes">Votes</button>
         <button class="sort-btn" data-sort="recent" onclick="sortToggle(this)" data-i18n="sort.recent">Recent</button>
       </div>
+    </div>
+    <div class="trending-area-filter-row">
+      <input id="trending-area-filter" class="form-input" style="max-width:280px;"
+        placeholder="Filter by area, ward, or city…" data-i18n-placeholder="trending.filterph"
+        onkeydown="if(event.key==='Enter')filterTrendingByArea()" />
+      <button class="sort-btn" onclick="filterTrendingByArea()" data-i18n="trending.filterbtn">Filter</button>
+      <button class="sort-btn" id="trending-clear-filter-btn" style="display:none;" onclick="clearTrendingAreaFilter()" data-i18n="trending.clearfilter">✕ Clear</button>
     </div>
 
     <div id="trending-feed-list">
@@ -582,6 +1151,12 @@
     <div style="background:var(--navy-subtle);border:1px solid #C5D0E6;border-radius:var(--radius-lg);padding:12px 16px;font-size:12px;color:var(--navy);margin-top:4px;">
       ℹ Notice the Rajasthan village with 1 vote scores 96 — above Bengaluru's road complaint with 2,341 votes. Severity, not crowd size, decides priority.
     </div>
+
+    <div class="trending-signin-cta" id="trending-signin-cta">
+      <div class="trending-signin-cta-title" data-i18n="trending.signincta.title">Want to report an issue, vote, or track your own complaints?</div>
+      <div class="trending-signin-cta-sub" data-i18n="trending.signincta.sub">Sign in for the full experience — your ward's feed, voting, and status updates.</div>
+      <button class="main-btn" style="width:auto;padding:10px 24px;" onclick="nav('login')" data-i18n="top.signin">Sign in</button>
+    </div>
   </div>
 </div>
 
@@ -595,8 +1170,11 @@
         <div class="feed-title nearme-title" id="nearme-title"><span class="nearme-pin">📍</span> <span data-i18n="nearme.title">Issues near you</span></div>
         <div class="feed-subtitle" id="nearme-subtitle" data-i18n="nearme.locating">Finding your location…</div>
       </div>
+      <button class="nearme-tutorial-btn" onclick="showNearMeTutorial()" title="How to use this map">❓</button>
       <button class="nearme-refresh" onclick="refreshNearMe()" data-i18n="nearme.refresh">📍 Refresh location</button>
     </div>
+
+    <div class="nearme-weekly-resolved" id="nearme-weekly-resolved"></div>
 
     <div class="nearme-manual" id="nearme-manual" hidden>
       <span data-i18n="nearme.denied">Location access was denied.</span>
@@ -620,12 +1198,86 @@
         <button class="sort-btn active" data-sort="distance" onclick="setNearMeSort('distance', this)" data-i18n="nearme.sortdistance">Distance</button>
         <button class="sort-btn" data-sort="priority" onclick="setNearMeSort('priority', this)" data-i18n="sort.priority">Priority</button>
       </div>
+      <button class="heatmap-toggle-btn" onclick="toggleHeatmap(this)" data-i18n="nearme.heatmap.off">🔥 Heatmap</button>
     </div>
 
     <div class="nearme-map" id="nearme-map"></div>
-    <div class="nearme-legend">● <span data-i18n="nearme.you">you</span> &nbsp; <span class="dot red"></span> ≥80 &nbsp; <span class="dot amber"></span> ≥55 &nbsp; <span class="dot green"></span> &lt;55</div>
+    <div class="nearme-legend">
+      ● <span data-i18n="nearme.you">you</span> &nbsp; <span class="dot red"></span> ≥80 &nbsp; <span class="dot amber"></span> ≥55 &nbsp; <span class="dot green"></span> &lt;55
+      <span class="nearme-legend-sep">·</span> <span data-i18n="nearme.legend.distance">tap a pin for its distance</span>
+    </div>
+    <div class="nearme-legend-types">
+      <span>💧 <span data-i18n="cat.drainage">Drainage</span></span>
+      <span>🛣️ <span data-i18n="cat.road">Road</span></span>
+      <span>🗑️ <span data-i18n="cat.garbage">Garbage</span></span>
+      <span>⚡ <span data-i18n="cat.electricity">Electricity</span></span>
+      <span>🌳 <span data-i18n="cat.tree_hazard">Tree hazard</span></span>
+      <span>🚰 <span data-i18n="cat.water_supply">Water supply</span></span>
+    </div>
+
+    <!-- MY NEIGHBORHOOD — real email alerts (see Backend/app/routers/subscriptions.py).
+         Email only: no SMS provider is wired into this app, so there's no phone field. -->
+    <div class="nearme-widget-card">
+      <div class="nearme-widget-title" data-i18n="nearme.sub.title">📬 My Neighborhood</div>
+      <div class="nearme-widget-sub" data-i18n="nearme.sub.sub">Get an email when an issue is reported or resolved near here.</div>
+      <div class="nearme-sub-row">
+        <input class="form-input" type="email" id="nearme-sub-email" placeholder="you@email.com" data-i18n-placeholder="nearme.sub.emailph" />
+        <button class="main-btn" id="nearme-sub-btn" onclick="subscribeNeighborhood()" data-i18n="nearme.sub.btn">Notify me</button>
+      </div>
+    </div>
+
+    <!-- AGENCY DIRECTORY — the same real, curl-verified ministry links as the
+         Govt Schemes page's Ministry Directory, just the compact version for
+         this context. No per-city department contacts are shown here: there
+         is no reliable structured dataset of city-level agency phone numbers
+         for this app to draw from, so this links the real national bodies
+         instead of inventing local ones. -->
+    <div class="nearme-widget-card">
+      <div class="nearme-widget-title" data-i18n="nearme.agency.title">🏛️ Who to contact</div>
+      <div class="agency-directory-grid">
+        <a class="agency-chip" href="https://swachhbharatmission.ddws.gov.in" target="_blank" rel="noopener">🗑️ <span data-i18n="cat.garbage">Garbage</span></a>
+        <a class="agency-chip" href="https://jaljeevanmission.gov.in" target="_blank" rel="noopener">🚰 <span data-i18n="nearme.agency.water">Water / Drainage</span></a>
+        <a class="agency-chip" href="https://powermin.gov.in" target="_blank" rel="noopener">⚡ <span data-i18n="cat.electricity">Electricity</span></a>
+        <a class="agency-chip" href="https://morth.nic.in" target="_blank" rel="noopener">🛣️ <span data-i18n="cat.road">Road</span></a>
+        <a class="agency-chip" href="https://moefcc.gov.in" target="_blank" rel="noopener">🌳 <span data-i18n="cat.tree_hazard">Tree hazard</span></a>
+      </div>
+      <a class="nearme-widget-link" onclick="nav('govtschemes')" data-i18n="nearme.agency.full">Full Ministry Directory →</a>
+    </div>
 
     <div id="nearme-feed-list"></div>
+  </div>
+
+  <!-- GUIDED TUTORIAL OVERLAY -->
+  <div class="help-overlay" id="nearme-tutorial-overlay" hidden onclick="if(event.target===this)closeNearMeTutorial()">
+    <div class="help-card">
+      <div class="help-card-head">
+        <div class="submit-success-title" data-i18n="tutorial.title">How to use this map</div>
+        <button class="help-close" onclick="closeNearMeTutorial()" title="Close">✕</button>
+      </div>
+      <div id="tutorial-step-pins">
+        <div class="help-qa"><div class="help-q" data-i18n="tutorial.pins.q">🔴🟠🟢 What do the pins mean?</div>
+        <div class="help-a" data-i18n="tutorial.pins.a">Color = priority (red is most urgent), the icon inside = issue type (💧 drainage, ⚡ electricity, and so on). Tap any pin for the full detail.</div></div>
+      </div>
+      <div id="tutorial-step-radius" hidden>
+        <div class="help-qa"><div class="help-q" data-i18n="tutorial.radius.q">📏 Radius &amp; sort</div>
+        <div class="help-a" data-i18n="tutorial.radius.a">Choose how far out to look (1–10 km) and whether the list below sorts by distance or by priority score.</div></div>
+      </div>
+      <div id="tutorial-step-heatmap" hidden>
+        <div class="help-qa"><div class="help-q" data-i18n="tutorial.heatmap.q">🔥 Heatmap</div>
+        <div class="help-a" data-i18n="tutorial.heatmap.a">Switch to a density view to spot clusters of activity at a glance instead of individual pins.</div></div>
+      </div>
+      <div id="tutorial-step-subscribe" hidden>
+        <div class="help-qa"><div class="help-q" data-i18n="tutorial.subscribe.q">📬 Stay updated</div>
+        <div class="help-a" data-i18n="tutorial.subscribe.a">Enter your email under "My Neighborhood" to get alerted whenever an issue is reported or resolved near this spot.</div></div>
+      </div>
+      <div class="tutorial-dots" id="nearme-tutorial-dots">
+        <span class="tutorial-dot active"></span><span class="tutorial-dot"></span><span class="tutorial-dot"></span><span class="tutorial-dot"></span>
+      </div>
+      <div class="tutorial-nav">
+        <button class="main-btn secondary" id="tutorial-back-btn" hidden onclick="nearMeTutorialStep(-1)" data-i18n="tutorial.back">← Back</button>
+        <button class="main-btn" id="tutorial-next-btn" onclick="nearMeTutorialNext()" data-i18n="tutorial.next">Next →</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -907,14 +1559,39 @@
      PAGE: SUBMIT
 ═══════════════════════════════════════════ -->
 <div class="page" id="page-submit" style="padding-top:52px;">
+  <div class="submit-success-overlay" id="submit-success-overlay" hidden>
+    <div class="submit-success-card">
+      <div class="submit-success-icon">✓</div>
+      <div class="submit-success-title" data-i18n="submit.successtitle">Complaint submitted</div>
+      <div class="submit-success-score" id="submit-success-score"></div>
+      <div class="submit-success-idlabel" id="submit-success-idlabel"></div>
+      <div class="submit-success-idrow">
+        <code class="submit-success-id" id="submit-success-id"></code>
+        <button class="submit-success-copy" onclick="copySubmitId()" data-i18n="submit.copyid">Copy</button>
+      </div>
+      <div class="submit-success-note" id="submit-success-note"></div>
+      <button class="main-btn" onclick="dismissSubmitSuccess()" data-i18n="submit.gotofeed">Go to feed</button>
+    </div>
+  </div>
   <div class="submit-wrap">
     <div class="back-link" onclick="nav('home')" style="margin-bottom:16px;display:inline-flex;align-items:center;gap:6px;color:var(--slate);cursor:pointer;" data-i18n="submit.back">← Back</div>
     <div class="form-card">
       <div style="font-size:17px;font-weight:600;margin-bottom:4px;" data-i18n="submit.title">Report an issue</div>
-      <div style="font-size:13px;color:var(--slate);margin-bottom:20px;" data-i18n="submit.sub">Write in any language — Hindi, Marathi, Tamil, English, whatever is easiest.</div>
+      <div style="font-size:13px;color:var(--slate);margin-bottom:16px;" data-i18n="submit.sub">Write in any language — Hindi, Marathi, Tamil, English, whatever is easiest.</div>
+      <div class="official-notice" id="submit-anon-notice" style="display:none;">
+        <span>📢</span>
+        <span>
+          <span id="submit-anon-notice-text"></span>
+          <a id="submit-anon-notice-link" style="font-weight:600;cursor:pointer;text-decoration:underline;" onclick="nav('login')"></a>
+        </span>
+      </div>
+      <div class="official-notice" id="submit-signedin-notice" style="display:none;background:var(--success-bg);border-color:#BBF7D0;color:#166534;">
+        <span>✓</span>
+        <span id="submit-signedin-notice-text"></span>
+      </div>
       <div class="form-group">
-        <label class="form-label" data-i18n="submit.problem">What is the problem?</label>
-        <textarea class="form-textarea" placeholder="Describe what you see. Be specific — which road, lane, or landmark?" data-i18n-placeholder="submit.problemph" id="complaint-text"></textarea>
+        <label class="form-label"><span data-i18n="submit.problem">What is the problem?</span> <span style="color:var(--critical)">*</span></label>
+        <textarea class="form-textarea" placeholder="Describe what you see. Be specific — which road, lane, or landmark?" data-i18n-placeholder="submit.problemph" id="complaint-text" required></textarea>
         <div class="voice-row">
           <button class="mic-btn" id="mic-btn" onclick="toggleRecording()">
             <span class="mic-dot"></span>
@@ -935,14 +1612,25 @@
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label" data-i18n="submit.location">Location</label>
-        <input class="form-input" id="complaint-location" placeholder="Area, ward, or nearest landmark" data-i18n-placeholder="submit.locationph" />
+        <label class="form-label"><span data-i18n="submit.location">Location</span> <span style="color:var(--critical)">*</span></label>
+        <input class="form-input" id="complaint-location" placeholder="Area, ward, or nearest landmark" data-i18n-placeholder="submit.locationph" required />
         <div class="voice-row" style="margin-top:8px;">
           <button type="button" class="mic-btn" id="loc-btn" onclick="captureLocation()">
             <span id="loc-btn-label" data-i18n="submit.uselocation">📍 Use my current location</span>
           </button>
           <span class="voice-status" id="loc-status"></span>
         </div>
+      </div>
+      <div class="form-group" id="submit-citystate-group">
+        <label class="form-label"><span data-i18n="submit.citystate">City &amp; State</span> <span style="color:var(--critical)">*</span></label>
+        <div style="display:flex;gap:10px;">
+          <select class="form-input" id="submit-state" style="flex:1;" onchange="onSubmitStateChange(this.value)"></select>
+          <div class="combo-wrap" style="flex:1;"><input class="form-input" id="submit-city" style="width:100%;" autocomplete="off" placeholder="City or district" oninput="filterCombo('submit-city','submit-district-list')" onfocus="filterCombo('submit-city','submit-district-list')" onkeydown="comboKeydown(event,'submit-city','submit-district-list')" /><div class="combo-list" id="submit-district-list" hidden></div></div>
+        </div>
+        <div class="form-hint" id="submit-district-hint" style="margin-top:4px;"></div>
+      </div>
+      <div class="form-group" id="submit-citystate-known" style="display:none;">
+        <div style="font-size:12px;color:var(--slate);">📍 <span id="submit-citystate-known-text"></span></div>
       </div>
       <div class="form-group">
         <label class="form-label"><span data-i18n="submit.photos">Photos or 360° images</span> <span style="color:var(--slate-light);font-weight:400" data-i18n="submit.optional">(optional but very helpful)</span></label>
@@ -1003,14 +1691,14 @@
   <div class="govt-wrap">
     <div class="govt-topstrip">
       <div>
-        <div style="font-size:15px;font-weight:600;">Government Dashboard — Ward 12 · Pimpri-Chinchwad</div>
+        <div style="font-size:15px;font-weight:600;" id="govt-topstrip-title">Government Dashboard</div>
         <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px;">AI-synthesized briefs · updated every 30 minutes</div>
       </div>
       <div class="govt-scope-toggle">
         <button class="scope-btn active" id="scope-btn-ward" onclick="setGovtScope('ward')">Ward 12</button>
         <button class="scope-btn" id="scope-btn-national" onclick="setGovtScope('national')">National</button>
       </div>
-      <div style="margin-left:auto;font-size:12px;color:rgba(255,255,255,0.6)">Logged in as: <strong style="color:white">Official · Ward 12</strong></div>
+      <div style="margin-left:auto;font-size:12px;color:rgba(255,255,255,0.6)">Logged in as: <strong style="color:white" id="govt-topstrip-official">Official</strong></div>
     </div>
 
     <div class="govt-scope-view active" id="govt-view-ward">
@@ -1075,17 +1763,8 @@
           <div class="hotspot-map" id="hotspot-map-ward"></div>
         </div>
         <div class="hotspot-card">
-          <div class="hotspot-label">Investment recommendations</div>
-          <div class="recommendation-item">
-            <div class="rec-title">NW Pune drainage upgrade</div>
-            <div class="rec-desc">8 complaint clusters in adjacent wards suggest a single infrastructure gap. Coordinated fix more effective than ward-by-ward patching.</div>
-            <div class="rec-cost">Estimated: ₹1.2–1.8 Cr</div>
-          </div>
-          <div class="recommendation-item">
-            <div class="rec-title">Rural water pipeline — 3 villages</div>
-            <div class="rec-desc">Uruli Kanchan + 2 linked villages share contaminated source. Permanent pipeline preferred over temporary supply.</div>
-            <div class="rec-cost">Estimated: ₹45–60 L</div>
-          </div>
+          <div class="hotspot-label">Cross-district patterns — real linked-area clusters</div>
+          <div id="govt-clusters-ward"><div style="padding:8px 0;color:var(--slate-light);font-size:12px;">Loading…</div></div>
         </div>
       </div>
     </div>
@@ -1093,35 +1772,15 @@
 
     <div class="govt-scope-view" id="govt-view-national">
       <div class="govt-stats">
-        <div class="govt-stat"><div class="govt-stat-num" style="color:var(--critical)">63</div><div class="govt-stat-label">Critical nationwide</div></div>
-        <div class="govt-stat"><div class="govt-stat-num" style="color:var(--warn)">412</div><div class="govt-stat-label">Moderate priority</div></div>
-        <div class="govt-stat"><div class="govt-stat-num">9</div><div class="govt-stat-label">States with systemic patterns</div></div>
-        <div class="govt-stat"><div class="govt-stat-num" style="color:var(--info)">₹38 Cr</div><div class="govt-stat-label">Recommended investment, this quarter</div></div>
+        <div class="govt-stat"><div class="govt-stat-num" style="color:var(--critical)" id="nat-stat-critical">—</div><div class="govt-stat-label">Critical nationwide</div></div>
+        <div class="govt-stat"><div class="govt-stat-num" style="color:var(--warn)" id="nat-stat-moderate">—</div><div class="govt-stat-label">Moderate priority</div></div>
+        <div class="govt-stat"><div class="govt-stat-num" id="nat-stat-patterns">—</div><div class="govt-stat-label">States with systemic patterns</div></div>
+        <div class="govt-stat"><div class="govt-stat-num" style="color:var(--info)" id="nat-stat-clusters">—</div><div class="govt-stat-label">Complaints in a linked-area cluster</div></div>
       </div>
       <div class="govt-grid">
         <div>
           <div style="font-size:12px;font-weight:600;color:var(--slate);margin-bottom:10px;">Demand hotspots by state <span class="country-chip">India · pilot</span></div>
-          <div class="brief-card">
-            <div class="national-row">
-              <div><div class="national-state">Maharashtra</div><div class="national-meta">Drainage + garbage clusters, 14 wards · monsoon amplifier active</div></div>
-              <div class="national-score" style="color:var(--critical)">92</div>
-            </div>
-            <div class="national-row">
-              <div><div class="national-state">Rajasthan</div><div class="national-meta">Water contamination, 6 villages · low-vote, high-severity pattern</div></div>
-              <div class="national-score" style="color:var(--critical)">96</div>
-            </div>
-            <div class="national-row">
-              <div><div class="national-state">Vidarbha (Maharashtra)</div><div class="national-meta">Electricity — heatwave amplifier, 14 linked areas</div></div>
-              <div class="national-score" style="color:var(--warn)">89</div>
-            </div>
-            <div class="national-row">
-              <div><div class="national-state">Karnataka</div><div class="national-meta">Road infrastructure — high vote count, low seasonal urgency</div></div>
-              <div class="national-score" style="color:var(--warn)">72</div>
-            </div>
-          </div>
-          <div style="background:var(--navy-subtle);border:1px solid #C5D0E6;border-radius:var(--radius-lg);padding:12px 16px;font-size:12px;color:var(--navy);margin-top:10px;">
-            ℹ Rajasthan's water crisis outranks Karnataka's road complaint despite far fewer citizen reports — same scoring logic as the ward view, rolled up nationally.
-          </div>
+          <div class="brief-card" id="nat-hotspots-by-state"><div style="padding:8px;color:var(--slate-light);font-size:12px;">Loading…</div></div>
         </div>
         <div>
           <div class="hotspot-card" style="margin-bottom:12px;">
@@ -1129,17 +1788,8 @@
             <div class="hotspot-map" id="hotspot-map-national"></div>
           </div>
           <div class="hotspot-card">
-            <div class="hotspot-label">Cross-state investment recommendations</div>
-            <div class="recommendation-item">
-              <div class="rec-title">Maharashtra monsoon drainage program</div>
-              <div class="rec-desc">14 wards, single systemic gap — coordinated state-level fix recommended over ward-by-ward patching.</div>
-              <div class="rec-cost">Estimated: ₹22–28 Cr</div>
-            </div>
-            <div class="recommendation-item">
-              <div class="rec-title">Rajasthan rural water security</div>
-              <div class="rec-desc">6 villages, shared contamination source pattern. Matches national demographic data for low-connectivity districts.</div>
-              <div class="rec-cost">Estimated: ₹8–10 Cr</div>
-            </div>
+            <div class="hotspot-label">Cross-state cluster patterns — real linked-area data</div>
+            <div id="govt-clusters-national"><div style="padding:8px 0;color:var(--slate-light);font-size:12px;">Loading…</div></div>
           </div>
         </div>
       </div>
@@ -1197,6 +1847,7 @@
         <button class="main-btn" type="submit">Sign in</button>
         </form>
         <div class="divider"><div class="divider-line"></div><div class="divider-text" data-i18n="auth.or">or</div><div class="divider-line"></div></div>
+        <div id="google-signin-container" hidden style="justify-content:center;margin-bottom:12px;"></div>
         <div class="auth-footer"><span data-i18n="auth.noaccount">No account?</span> <a onclick="switchAuthTabByName('signup')" data-i18n="auth.createfree">Create one free</a> &nbsp;·&nbsp; <a onclick="showForgotPassword()" data-i18n="auth.forgot">Forgot password?</a></div>
       </div>
       <div id="form-forgot" style="display:none;">
@@ -1247,6 +1898,10 @@
           </select>
           <div class="form-hint">This sets your dashboard's default view. You can still explore and endorse issues nationwide regardless of level.</div>
         </div>
+        <div class="official-notice" id="signup-official-verify-notice" style="display:none;">
+          <span>🔍</span>
+          <span data-i18n="auth.officialverifynotice">Use your official/work email — personal providers (Gmail, Yahoo, etc.) aren't accepted. An admin reviews every official signup before it gets dashboard access; once approved, you'll be emailed a new login and a temporary password you can change later.</span>
+        </div>
         <form id="signup-form-1" autocomplete="on" onsubmit="event.preventDefault(); goToStep(2);">
         <div class="form-group"><label class="form-label" data-i18n="auth.fullname">Full name</label><input class="form-input" id="signup-name" name="name" autocomplete="name" placeholder="Your name" /></div>
         <div class="form-group"><label class="form-label" data-i18n="auth.email">Email</label><input class="form-input" type="email" id="signup-email" name="email" autocomplete="email" placeholder="your@email.com" /></div>
@@ -1273,7 +1928,7 @@
         <div class="form-heading" data-i18n="auth.step2title">Where do you live?</div>
         <div class="form-subheading" data-i18n="auth.step2sub">Your home feed shows your ward's complaints. You can still vote for anyone's issues in Trending.</div>
         <div class="form-group"><label class="form-label" data-i18n="auth.state">State / Union Territory</label><select class="form-input" id="signup-state" name="address-level1" autocomplete="address-level1" onchange="onStateChange(this.value)"></select></div>
-        <div class="form-group"><label class="form-label" data-i18n="auth.city">City / District</label><input class="form-input" id="signup-city" name="address-level2" autocomplete="address-level2" list="district-list" placeholder="e.g. Pune, Mumbai, Nagpur" /><datalist id="district-list"></datalist><div class="form-hint" id="district-hint">Pick from the list or type your own.</div></div>
+        <div class="form-group"><label class="form-label" data-i18n="auth.city">City / District</label><div class="combo-wrap"><input class="form-input" id="signup-city" name="address-level2" autocomplete="off" placeholder="e.g. Pune, Mumbai, Nagpur" oninput="filterCombo('signup-city','district-list')" onfocus="filterCombo('signup-city','district-list')" onkeydown="comboKeydown(event,'signup-city','district-list')" /><div class="combo-list" id="district-list" hidden></div></div><div class="form-hint" id="district-hint">Pick from the list or type your own.</div></div>
         <div class="form-group"><label class="form-label" data-i18n="auth.area">Area / Locality</label><input class="form-input" id="signup-area" name="address-line1" autocomplete="address-line1" placeholder="e.g. Shivaji Nagar, Kothrud" /></div>
         <div class="form-group"><label class="form-label"><span data-i18n="auth.ward">Ward number</span> <span style="color:var(--slate-light);font-weight:400" data-i18n="auth.optional">(optional)</span></label><input class="form-input" id="signup-ward" name="ward" autocomplete="off" placeholder="e.g. Ward 12" /><div class="form-hint" data-i18n="auth.wardhint">Don't know your ward? Enter your area and we'll match from government data.</div></div>
         <div style="display:flex;gap:8px;margin-top:8px;">
@@ -1382,6 +2037,10 @@
       <span class="off-nav-dot">○</span> Resolved
       <span class="off-badge green" id="off-badge-resolved" hidden></span>
     </div>
+    <div class="off-nav-item" data-view="verify" id="off-nav-verify" style="display:none;" onclick="setOfficialView('verify')">
+      <span class="off-nav-dot">○</span> Official Verifications
+      <span class="off-badge amber" id="off-badge-verify" hidden></span>
+    </div>
     <div class="off-sidebar-foot">🏛️ Scores reflect severity, season and pattern — not vote count.</div>
   </div>
   <div class="off-main" id="off-main"></div>
@@ -1389,6 +2048,26 @@
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+
+<!-- HOME-PAGE CHATBOT — real AI, grounded only in what NagarVaani actually
+     does. Answers in whichever of the 4 languages is currently selected. -->
+<div class="chatbot-widget" id="chatbot-widget" hidden>
+  <div class="chatbot-panel" id="chatbot-panel" hidden>
+    <div class="chatbot-header">
+      <span data-i18n="chatbot.title">NagarVaani Assistant</span>
+      <button class="chatbot-close" onclick="toggleChatbotPanel()" title="Close">✕</button>
+    </div>
+    <div class="chatbot-messages" id="chatbot-messages"></div>
+    <div class="chatbot-suggestions" id="chatbot-suggestions"></div>
+    <div class="chatbot-input-row">
+      <input id="chatbot-input" data-i18n-placeholder="chatbot.placeholder" placeholder="Ask a question…" onkeydown="if(event.key==='Enter')sendChatbotMessage()" />
+      <button class="chatbot-send" onclick="sendChatbotMessage()" title="Send">→</button>
+    </div>
+  </div>
+  <button class="chatbot-fab" onclick="toggleChatbotPanel()" title="Ask NagarVaani">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+  </button>
+</div>
 
 <!-- ═══════════════════════════════════════════
      INDIA STATES + DISTRICTS (classic script: plain globals so inline
@@ -1449,8 +2128,10 @@ const INDIA_DISTRICTS = {
   "Puducherry": ["Puducherry","Karaikal","Mahe","Yanam"],
 };
 
-function populateStates(defaultState = "Maharashtra") {
-  const sel = document.getElementById('signup-state');
+// Shared by the signup form's State/City fields and the submit form's
+// City & State fields — same state list, same district data, same UX.
+function populateStateSelect(stateSelId, defaultState = "Maharashtra") {
+  const sel = document.getElementById(stateSelId);
   if (!sel || sel.options.length) return;
   const mk = (label) => { const o = document.createElement('option'); o.value = label; o.textContent = label; return o; };
   const states = document.createElement('optgroup'); states.label = 'States';
@@ -1458,15 +2139,15 @@ function populateStates(defaultState = "Maharashtra") {
   INDIA_STATES.forEach(name => (INDIA_UNION_TERRITORIES.has(name) ? uts : states).appendChild(mk(name)));
   sel.appendChild(states); sel.appendChild(uts);
   sel.value = defaultState;
-  onStateChange(defaultState);
 }
 
-function onStateChange(state) {
-  const list = document.getElementById('district-list');
-  const city = document.getElementById('signup-city');
-  const hint = document.getElementById('district-hint');
+function updateDistrictList(state, listId, cityInputId, hintId) {
+  const list = document.getElementById(listId);
+  const city = document.getElementById(cityInputId);
+  const hint = document.getElementById(hintId);
   const districts = INDIA_DISTRICTS[state] || [];
-  list.innerHTML = districts.map(d => `<option value="${d}"></option>`).join('');
+  list.dataset.options = JSON.stringify(districts);
+  filterCombo(cityInputId, listId);
   city.placeholder = districts.length ? `e.g. ${districts.slice(0, 3).join(', ')}` : 'City or district';
   hint.textContent = districts.length
     ? `${districts.length} districts of ${state} listed — pick one or type your own.`
@@ -1474,7 +2155,69 @@ function onStateChange(state) {
   if (city.value && !districts.includes(city.value)) city.value = '';
 }
 
+/* ── CITY/DISTRICT COMBOBOX ──
+   A real native <datalist> renders its suggestion popup as unstyleable OS/
+   browser chrome, and combining it with autocomplete="address-level2" made
+   Chrome's own address-autofill preview compete with it — the "I typed Pune
+   and couldn't actually select it" bug. This is a small hand-rolled
+   combobox instead: fully ours, so click/Enter selection always works and
+   it matches the rest of the form visually. */
+function filterCombo(inputId, listId) {
+  const input = document.getElementById(inputId);
+  const list = document.getElementById(listId);
+  const all = JSON.parse(list.dataset.options || '[]');
+  const q = (input.value || '').trim().toLowerCase();
+  const filtered = q ? all.filter(o => o.toLowerCase().includes(q)) : all;
+  list.innerHTML = filtered.map(o =>
+    `<div class="combo-option" onmousedown="event.preventDefault();selectCombo('${inputId}','${listId}','${o.replace(/'/g, "\\'")}')">${o}</div>`
+  ).join('');
+  list.hidden = filtered.length === 0;
+}
+
+function selectCombo(inputId, listId, value) {
+  document.getElementById(inputId).value = value;
+  document.getElementById(listId).hidden = true;
+}
+
+function comboKeydown(event, inputId, listId) {
+  const list = document.getElementById(listId);
+  if (event.key === 'Escape') { list.hidden = true; return; }
+  if (event.key === 'Enter' && !list.hidden) {
+    const first = list.querySelector('.combo-option');
+    if (first) {
+      event.preventDefault();
+      first.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+    }
+  }
+}
+
+document.addEventListener('click', (e) => {
+  document.querySelectorAll('.combo-list').forEach(l => {
+    const wrap = l.closest('.combo-wrap');
+    if (!l.hidden && wrap && !wrap.contains(e.target)) l.hidden = true;
+  });
+});
+
+function populateStates(defaultState = "Maharashtra") {
+  populateStateSelect('signup-state', defaultState);
+  onStateChange(defaultState);
+}
+
+function onStateChange(state) {
+  updateDistrictList(state, 'district-list', 'signup-city', 'district-hint');
+}
+
+function populateSubmitStates(defaultState = "Maharashtra") {
+  populateStateSelect('submit-state', defaultState);
+  onSubmitStateChange(defaultState);
+}
+
+function onSubmitStateChange(state) {
+  updateDistrictList(state, 'submit-district-list', 'submit-city', 'submit-district-hint');
+}
+
 populateStates();
+populateSubmitStates();
 </script>
 
 <script type="module" src="js/main.js"></script>

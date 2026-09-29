@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr
 
-from app.models.models import ComplaintCategory, ComplaintStatus, OfficialLevel, UserRole
+from app.models.models import ComplaintCategory, ComplaintStatus, OfficialLevel, OfficialVerificationStatus, UserRole
 
 
 # ── COMPLAINTS ────────────────────────────────────────────────────────────────
@@ -146,14 +146,59 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
 
 
+class GoogleAuthRequest(BaseModel):
+    credential: str  # the ID token Google Identity Services hands back
+
+
+class GoogleConfigOut(BaseModel):
+    enabled: bool
+    client_id: str = ""
+
+
 class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
     id: str
     role: UserRole
     official_level: Optional[OfficialLevel] = None
+    official_status: Optional[OfficialVerificationStatus] = None
+    is_admin: bool = False
     name: str
+    email: Optional[EmailStr] = None
     ward: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
     area: Optional[str] = None
+    telegram_chat_id: Optional[str] = None
+
+
+# ── ADMIN: OFFICIAL VERIFICATION ────────────────────────────────────────────
+class PendingOfficialOut(BaseModel):
+    id: str
+    name: str
+    requested_email: Optional[str] = None
+    official_level: Optional[OfficialLevel] = None
+    state: Optional[str] = None
+    city: Optional[str] = None
+    ward: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+
+class ApproveOfficialOut(BaseModel):
+    message: str
+    new_email: str
+    temporary_password: str
+    emailed: bool
+
+
+class RejectOfficialRequest(BaseModel):
+    reason: Optional[str] = None
+
+
+# ── NEIGHBORHOOD SUBSCRIPTION ────────────────────────────────────────────────
+class NeighborhoodSubscribeRequest(BaseModel):
+    email: EmailStr
+    latitude: float
+    longitude: float
+    radius_km: float = 1.6
+    label: Optional[str] = None

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from app.config import get_settings
 from app.database import create_tables
-from app.routers import auth, complaints, media, stats, telegram, translate
+from app.routers import admin, auth, chatbot, complaints, media, stats, subscriptions, telegram, translate
 
 settings = get_settings()
 IS_DEV = settings.environment.lower() == "development"
@@ -63,6 +63,9 @@ app.include_router(stats.router, prefix="/api")
 app.include_router(telegram.router, prefix="/api")
 app.include_router(media.router, prefix="/api")
 app.include_router(translate.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
+app.include_router(chatbot.router, prefix="/api")
+app.include_router(subscriptions.router, prefix="/api")
 
 
 @app.get("/api/health")

@@ -23,6 +23,9 @@ export function switchToOfficialMode() {
   document.getElementById('official-shell').hidden = false;
   document.getElementById('off-user-name').textContent = authUser.name || 'Official';
   document.getElementById('off-user-level').textContent = LEVEL_LABEL[authUser.official_level] || 'Official';
+  const verifyNav = document.getElementById('off-nav-verify');
+  if (verifyNav) verifyNav.style.display = authUser.is_admin ? 'flex' : 'none';
+  if (authUser.is_admin) refreshVerifyBadge();
   setOfficialView(currentView || 'queue');
 }
 
@@ -60,6 +63,7 @@ export function setOfficialView(view) {
   else if (view === 'resolved') loadOfficialQueue('resolved');
   else if (view === 'map') loadHotspotMapFull();
   else if (view === 'flags') loadInvestmentFlags();
+  else if (view === 'verify') loadVerificationQueue();
 }
 
 async function loadOfficialStats() {
@@ -381,5 +385,76 @@ export async function loadInvestmentFlags() {
     }).join('');
   } catch (err) {
     document.getElementById('off-rows').innerHTML = `<div class="off-empty" style="color:#DC2626">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+/* ── official verifications (admin only) ──
+   There's no real government employee registry to check a signup against —
+   this is the manual trust boundary instead: an official's account can't do
+   anything official-only (require_official on the backend) until an admin
+   approves it here. Approval replaces their login with a system-issued email
+   and a generated password, emailed to the work address they applied with. */
+async function refreshVerifyBadge() {
+  try {
+    const items = await api('/admin/pending-officials');
+    setBadge('off-badge-verify', items.length);
+  } catch (_) { /* not an admin, or endpoint unreachable — badge just stays hidden */ }
+}
+
+export async function loadVerificationQueue() {
+  const main = document.getElementById('off-main');
+  main.innerHTML = `
+    ${sectionHeader('Official Verifications', "Signups can't be checked against a real government employee registry — review each one and approve or reject by hand.")}
+    <div id="verify-rows">${loadingPlaceholder()}</div>`;
+  try {
+    const items = await api('/admin/pending-officials');
+    setBadge('off-badge-verify', items.length);
+    const rows = document.getElementById('verify-rows');
+    if (!items.length) {
+      rows.innerHTML = `<div class="off-empty">No pending official applications right now.</div>`;
+      return;
+    }
+    rows.innerHTML = items.map(p => `
+      <div class="off-row" style="grid-template-columns:1fr auto;align-items:center;padding:14px 16px;">
+        <div>
+          <div class="off-title">${escapeHtml(p.name)}</div>
+          <div style="font-size:12px;color:#64748B;margin-top:2px;">
+            ${escapeHtml(p.requested_email || '—')} · ${escapeHtml(LEVEL_LABEL[p.official_level] || p.official_level || '—')}
+            · ${escapeHtml(p.ward ? 'Ward ' + p.ward : (p.city || p.state || '—'))}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="off-btn resolve" onclick="approveOfficialApplication('${p.id}', this)">✓ Approve</button>
+          <button class="off-btn" style="border-color:#DC2626;color:#991B1B;" onclick="rejectOfficialApplication('${p.id}', this)">✕ Reject</button>
+        </div>
+      </div>`).join('');
+  } catch (err) {
+    document.getElementById('verify-rows').innerHTML = `<div class="off-empty" style="color:#DC2626">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+export async function approveOfficialApplication(id, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    const result = await api(`/admin/officials/${id}/approve`, { method: 'POST' });
+    showToast(result.emailed
+      ? `Approved — credentials emailed. Login: ${result.new_email}`
+      : `Approved — SMTP not configured. Relay these yourself: ${result.new_email} / ${result.temporary_password}`);
+    loadVerificationQueue();
+  } catch (err) {
+    showToast(err.message);
+    if (btn) btn.disabled = false;
+  }
+}
+
+export async function rejectOfficialApplication(id, btn) {
+  if (btn) btn.disabled = true;
+  try {
+    await api(`/admin/officials/${id}/reject`, { method: 'POST', body: JSON.stringify({}) });
+    showToast('Application rejected');
+    loadVerificationQueue();
+  } catch (err) {
+    showToast(err.message);
+    if (btn) btn.disabled = false;
   }
 }
