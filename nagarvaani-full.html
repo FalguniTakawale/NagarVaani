@@ -48,6 +48,43 @@
   <button class="topbar-signout" id="signout-topbtn" hidden onclick="doSignOut()" data-i18n="top.signout">Sign out</button>
 </div>
 
+<!-- SHARE MODAL -->
+<div class="help-overlay" id="share-overlay" hidden onclick="if(event.target===this)closeOverlay('share-overlay')">
+  <div class="help-card">
+    <div class="help-card-head">
+      <div class="submit-success-title" data-i18n="share.title">Share this complaint</div>
+      <button class="help-close" onclick="closeOverlay('share-overlay')" title="Close">✕</button>
+    </div>
+    <button class="main-btn" id="share-native-btn" onclick="shareNative()" hidden style="margin-bottom:12px;" data-i18n="share.native">Share via… (phone share sheet)</button>
+    <div class="share-targets" id="share-targets"></div>
+    <div class="share-copy-row">
+      <input class="form-input" id="share-url" readonly onclick="this.select()" />
+      <button class="action-btn primary" onclick="copyShareLink()" data-i18n="share.copy">Copy link</button>
+    </div>
+    <div class="help-a" style="margin-top:10px;" data-i18n="share.note">Anyone with the link can view this complaint (corruption reports still need a sign-in).</div>
+  </div>
+</div>
+
+<!-- FLAG MODAL -->
+<div class="help-overlay" id="flag-overlay" hidden onclick="if(event.target===this)closeOverlay('flag-overlay')">
+  <div class="help-card">
+    <div class="help-card-head">
+      <div class="submit-success-title" data-i18n="flag.title">Report this complaint</div>
+      <button class="help-close" onclick="closeOverlay('flag-overlay')" title="Close">✕</button>
+    </div>
+    <div class="help-a" style="margin-bottom:12px;" data-i18n="flag.intro">Goes to the officials' moderation queue in the portal. Nothing is hidden automatically — a person reviews it.</div>
+    <label class="flag-opt"><input type="radio" name="flag-reason" value="spam" checked /> <span data-i18n="flag.r.spam">Spam or unrelated</span></label>
+    <label class="flag-opt"><input type="radio" name="flag-reason" value="misleading" /> <span data-i18n="flag.r.misleading">Misleading or false</span></label>
+    <label class="flag-opt"><input type="radio" name="flag-reason" value="duplicate" /> <span data-i18n="flag.r.duplicate">Duplicate of another complaint</span></label>
+    <label class="flag-opt"><input type="radio" name="flag-reason" value="abusive" /> <span data-i18n="flag.r.abusive">Abusive, hateful or political</span></label>
+    <label class="flag-opt"><input type="radio" name="flag-reason" value="wrong_location" /> <span data-i18n="flag.r.wrong_location">Wrong location</span></label>
+    <label class="flag-opt"><input type="radio" name="flag-reason" value="other" /> <span data-i18n="flag.r.other">Something else</span></label>
+    <textarea class="form-input" id="flag-note" maxlength="500" rows="3" placeholder="Optional note for the reviewer" style="margin:10px 0;width:100%;"></textarea>
+    <div id="flag-error" style="color:var(--critical);font-size:12px;min-height:16px;margin-bottom:6px;"></div>
+    <button class="main-btn" id="flag-submit-btn" onclick="submitFlag()" data-i18n="flag.submit">Send report</button>
+  </div>
+</div>
+
 <!-- HELP / FAQ MODAL — available from every page -->
 <div class="help-overlay" id="help-overlay" hidden onclick="if(event.target===this)closeHelp()">
   <div class="help-card">
@@ -115,6 +152,10 @@
   </div>
   <div class="nav-divider"></div>
   <div class="nav-section-label" data-i18n="nav.info">Info</div>
+  <div class="nav-item" id="nav-levels" onclick="nav('levels')">
+    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="10"/><line x1="10" y1="20" x2="10" y2="4"/><line x1="16" y1="20" x2="16" y2="13"/><line x1="22" y1="20" x2="22" y2="7"/></svg>
+    <span>How scoring works (L1–L5)</span>
+  </div>
   <div class="nav-item" onclick="nav('about')">
     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     <span data-i18n="nav.about">About</span>
@@ -307,11 +348,70 @@
     <div>NagarVaani — नगरवाणी · Your Voice, Your City</div>
     <div class="landing-footer-links">
       <span onclick="nav('about')" data-i18n="nav.about">About</span>
+      <span onclick="nav('levels')">How scoring works</span>
       <span onclick="nav('track')" data-i18n="track.footerlink">Track a complaint</span>
       <span onclick="nav('forofficials')" data-i18n="land.footer.officials">For officials</span>
       <span onclick="nav('orgsupport')" data-i18n="land.footer.getinvolved">Get involved</span>
       <span onclick="nav('impact')" data-i18n="land.footer.impact">Our impact</span>
       <span onclick="nav('login')" data-i18n="top.signin">Sign in</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: HOW SCORING WORKS (L1–L5)
+════════════════════════════════════════════ -->
+<div class="page" id="page-levels" style="padding-top:52px;">
+  <div class="section" style="max-width:820px;">
+    <div class="section-head" style="text-align:left;">
+      <div class="section-title" style="font-size:28px;">What do L1 – L5 mean?</div>
+      <div class="section-sub">How NagarVaani decides which complaint gets attention first — in plain language</div>
+    </div>
+    <p class="lv-lead">Every complaint gets a <b>priority score from 0 to 100</b>. It is <b>not</b> a popularity contest: a drain overflowing near an electric pole in a village of fifty people can outrank a pothole that 100 people upvoted. The score is built from five “levels” (L1–L5) plus a very small vote nudge. You can see the exact numbers for any complaint under <b>“Why this scores …”</b> on its page.</p>
+
+    <div class="lv-card lv1"><div class="lv-badge">L1</div><div>
+      <div class="lv-name">Immediate safety risk <span class="lv-pts">+40 points · floor of 90</span></div>
+      <div class="lv-desc">Could someone be physically hurt in the next few days? Live wires, an open manhole, a leaning tree over a road, flooding entering homes. If the AI judges yes, the complaint gets +40 severity <b>and can never score below 90</b>. This overrides everything else.</div>
+      <div class="lv-eg">Example: “Live wire hanging over the school gate.” → Critical.</div></div></div>
+
+    <div class="lv-card lv2"><div class="lv-badge">L2</div><div>
+      <div class="lv-name">Season <span class="lv-pts">multiplier × 1.0 – ×2.0</span></div>
+      <div class="lv-desc">The same problem is more urgent in some seasons. Blocked drains and tree hazards are far worse in the monsoon; water-supply and electricity failures are worse in summer heat. The current season multiplies the severity points. It is fixed at the moment the complaint is scored (see the limitations note below).</div>
+      <div class="lv-eg">Example: Clogged drain in July (monsoon) is amplified; the same drain in December is not.</div></div></div>
+
+    <div class="lv-card lv3"><div class="lv-badge">L3</div><div>
+      <div class="lv-name">Type of problem <span class="lv-pts">+10 to +28 points</span></div>
+      <div class="lv-desc">Some problems affect health and daily life more than others. Base weights: water supply 28 · drainage 26 · electricity 22 · tree hazard 20 · corruption 18 · garbage 16 · road 14 · other 10.</div>
+      <div class="lv-eg">Example: No drinking water starts higher than a rough road surface.</div></div></div>
+
+    <div class="lv-card lv4"><div class="lv-badge">L4</div><div>
+      <div class="lv-name">How many people are affected <span class="lv-pts">+0 to +15 points</span></div>
+      <div class="lv-desc">Larger populations get a few extra points (log-scaled, so a huge city is not 1000× a small town — a village is never buried). <b>Prototype note:</b> there is no census dataset connected yet, so every complaint currently uses a default population of 10,000 (= +12). The slot is built; the data is the missing piece.</div>
+      <div class="lv-eg">Example: 10,000 people → +12. 100 people → +6.</div></div></div>
+
+    <div class="lv-card lv5"><div class="lv-badge">L5</div><div>
+      <div class="lv-name">Same problem in other areas <span class="lv-pts">+5 per area, max +20</span></div>
+      <div class="lv-desc">If neighbouring wards or districts report the same issue — through the “Same issue in my area” button, or because a comment names another place (the AI links it automatically) — it stops being a one-off and becomes a pattern that may need a bigger fix.</div>
+      <div class="lv-eg">Example: 3 areas linked → +15.</div></div></div>
+
+    <div class="lv-card lv6"><div class="lv-badge">Votes</div><div>
+      <div class="lv-name">Community votes <span class="lv-pts">gentle nudge, ×1.0 – ~×1.3</span></div>
+      <div class="lv-desc">The weakest signal, on purpose. Votes multiply the score by <code>1 + 0.1 × log10(votes + 1)</code>: 100 votes add only about 20%. Votes can reorder two similar issues; they cannot lift a minor issue above a critical one.</div></div></div>
+
+    <div class="lv-formula"><b>The formula:</b><br>
+      severity = L1 + L3 + L4 + L5<br>
+      score = min(100, severity × L2 season) — floored at 90 when L1 applies — then × vote nudge</div>
+
+    <div class="lv-bands"><b>Reading the score:</b>
+      <span class="score-badge score-critical">80–100 Critical</span>
+      <span class="score-badge score-warn">55–79 Moderate</span>
+      <span class="score-badge score-ok">0–54 Lower</span></div>
+
+    <div class="lv-honest"><b>What is real vs. simplified:</b> L1 (the AI's safety judgement), L3, L5 and the vote nudge are computed exactly as described from live data. L2 uses the server's calendar month (India season table). L4 uses a fixed default population until a census dataset is ingested. The 0–100 weights are transparent editorial choices, not a validated statistical model — see <code>docs/REALITY_MATRIX.md</code> in the repository.</div>
+
+    <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="main-btn" style="width:auto;padding:10px 18px;" onclick="nav('trending')">See live scored complaints</button>
+      <button class="action-btn outline" onclick="nav('about')">About NagarVaani</button>
     </div>
   </div>
 </div>
@@ -1383,6 +1483,7 @@
           <span class="breakdown-value">+3</span>
         </div>
         </div>
+        <div class="breakdown-note"><a href="#levels" onclick="event.preventDefault();nav('levels')" style="color:var(--saffron-dark);font-weight:600;">What do L1–L5 mean? →</a></div>
         <div class="breakdown-note" id="breakdown-note">Votes are the weakest signal — this complaint scores 94 because of safety risk + monsoon season + systemic pattern, not because many people voted.</div>
       </div>
       <div class="translate-bar">
@@ -1400,8 +1501,8 @@
       <div class="action-bar">
         <button class="action-btn primary" id="vote-btn" onclick="doVote()">▲ <span class="vote-count-big" id="vote-num">3</span> votes</button>
         <button class="action-btn saffron-btn" onclick="doSameIssue()" data-i18n="detail.sameissue">📍 Same issue in my area</button>
-        <button class="action-btn outline" onclick="showToast('Link copied')" data-i18n="detail.share">🔗 Share</button>
-        <button class="action-btn outline" onclick="showToast('Flagged for review')" data-i18n="detail.flag">⚑ Flag</button>
+        <button class="action-btn outline" onclick="openShare()" data-i18n="detail.share">🔗 Share</button>
+        <button class="action-btn outline" onclick="openFlag()" data-i18n="detail.flag" title="Report this complaint to the moderators (spam, misleading, duplicate…)">⚑ Flag</button>
       </div>
     </div>
 
@@ -2028,6 +2129,9 @@
     </div>
     <div class="off-nav-item" data-view="map" onclick="setOfficialView('map')">
       <span class="off-nav-dot">○</span> Hotspot Map
+    </div>
+    <div class="off-nav-item" data-view="projects" onclick="setOfficialView('projects')">
+      <span class="off-nav-dot">○</span> Priority Projects
     </div>
     <div class="off-nav-item" data-view="flags" onclick="setOfficialView('flags')">
       <span class="off-nav-dot">○</span> Investment Flags

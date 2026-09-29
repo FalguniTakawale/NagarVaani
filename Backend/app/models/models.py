@@ -286,3 +286,40 @@ class NeighborhoodSubscription(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     unsubscribe_token = Column(String(64), unique=True, nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+# ── COMPLAINT FLAG (citizen "report this post") ───────
+class ComplaintFlag(Base):
+    """A signed-in citizen reporting a complaint as spam / misleading /
+    duplicate / abusive / wrong-location. Goes to the moderation queue in the
+    official portal (Investment Flags page, "Citizen reports"). Distinct from an
+    official's "[OFFICIAL FLAG]" investment flag, which is a comment."""
+    __tablename__ = "complaint_flags"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    complaint_id = Column(String, ForeignKey("complaints.id"), nullable=False, index=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    reason = Column(String(30), nullable=False)   # spam | misleading | duplicate | abusive | wrong_location | other
+    note = Column(String(500))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+# ── REGION INDICATOR (external dataset ingestion) ─────
+class RegionIndicator(Base):
+    """One row of an external dataset — census population, an infrastructure
+    index, a planned-investment figure — keyed by country/state/city. Loaded by
+    an admin (POST /api/insights/indicators or `python load_indicators.py file.csv`).
+    Nothing here is bundled or invented: with no rows loaded, the platform says so
+    and scoring falls back to its default population. `country` is what makes this
+    BRICS-ready — one table, any nation."""
+    __tablename__ = "region_indicators"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    country = Column(String(60), nullable=False, default="India", index=True)
+    state = Column(String(100), index=True)
+    city = Column(String(100), index=True)
+    indicator = Column(String(60), nullable=False, index=True)   # population | infra_index | planned_investment | ...
+    value = Column(Float, nullable=False)
+    year = Column(Integer)
+    source = Column(String(200))                                  # e.g. "Census 2011 table X" — required provenance
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

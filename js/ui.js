@@ -14,7 +14,9 @@ export function loadingPlaceholder(text = t('js.loading')) {
 export function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str || '';
-  return div.innerHTML;
+  // textContent→innerHTML escapes & < > only; also escape quotes so the result
+  // is safe inside a double- or single-quoted HTML attribute (alt="…", href="…").
+  return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 export function showHelp() {

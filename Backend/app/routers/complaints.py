@@ -7,20 +7,22 @@ from sqlalchemy.orm import selectinload
 from typing import Optional, List
 from app.database import get_db
 from app.models.models import (
-    Complaint, Vote, Comment, LinkedArea, StatusLog,
+    Complaint, Vote, Comment, LinkedArea, StatusLog, ComplaintFlag,
     ComplaintStatus, ComplaintCategory, User, OfficialLevel
 )
 from app.schemas.schemas import (
     ComplaintCreate, ComplaintOut, ComplaintListItem,
     VoteCreate, VoteOut, CommentCreate, CommentOut,
-    LinkAreaCreate, StatusUpdate, DisputeCreate, TranslateRequest, TranslateResponse
+    LinkAreaCreate, StatusUpdate, FlagCreate, DisputeCreate, TranslateRequest, TranslateResponse
 )
+from app.models.models import UserRole
 from app.services.auth import get_current_user, require_user, require_official
 from app.services.jurisdiction import apply_jurisdiction
 from app.services.rate_limit import check_rate_limit, client_ip, seconds_until_reset
 from app.services.telegram_client import send_message as tg_send
 from app.services.email import send_status_update_email
 from app.routers.subscriptions import notify_nearby_subscribers
+from app.routers.insights import population_for
 from app.services.ai_engine import (
     process_complaint_pipeline,
     detect_places_in_comment,
@@ -84,11 +86,15 @@ async def submit_complaint(
 
     location_str = payload.location_text or payload.area or payload.city or ""
 
+    # Real population if an external dataset (region_indicators) covers this
+    # city, else the prototype default of 10,000.
+    population = await population_for(db, resolved_city, resolved_state)
+
     # Run the full AI pipeline
     ai_result = await process_complaint_pipeline(
         text=payload.text,
         location=location_str,
-        population=10000,  # default; later lookup from districts table
+        population=population,
         vote_count=0,
         linked_area_count=0,
     )
@@ -111,7 +117,7 @@ async def submit_complaint(
         rescored = await score_complaint(
             text=payload.text, category=payload.category.value,
             is_safety_risk=ai_result.get("is_safety_risk", False),
-            population=10000, linked_area_count=0, vote_count=0,
+            population=population, linked_area_count=0, vote_count=0,
         )
         ai_result["category"] = payload.category.value
         ai_result["priority_score"] = rescored["score"]
@@ -408,6 +414,75 @@ async def flagged_complaints(
     return out
 
 
+# ── CITIZEN FLAGS ("report this post") ────────────────────────────────────────
+FLAG_REASON_LABELS = {
+    "spam": "Spam", "misleading": "Misleading / false", "duplicate": "Duplicate",
+    "abusive": "Abusive / hateful", "wrong_location": "Wrong location", "other": "Other",
+}
+
+
+@router.get("/citizen-flags")
+async def citizen_flags(
+    db: AsyncSession = Depends(get_db),
+    official: User = Depends(require_official),
+):
+    """Moderation queue for officials: complaints signed-in citizens reported,
+    scoped to the official's jurisdiction. Declared before /{complaint_id}."""
+    q = (
+        select(Complaint, func.count(ComplaintFlag.id), func.max(ComplaintFlag.created_at))
+        .join(ComplaintFlag, ComplaintFlag.complaint_id == Complaint.id)
+        .group_by(Complaint.id)
+        .order_by(desc(func.count(ComplaintFlag.id)))
+        .limit(100)
+    )
+    q = apply_jurisdiction(q, official)
+    out = []
+    for complaint, n, last in (await db.execute(q)).all():
+        reasons = (await db.execute(
+            select(ComplaintFlag.reason, ComplaintFlag.note).where(ComplaintFlag.complaint_id == complaint.id)
+            .order_by(desc(ComplaintFlag.created_at)).limit(5)
+        )).all()
+        out.append({
+            "id": complaint.id,
+            "title": (complaint.text_translated or complaint.text_original)[:120],
+            "priority_score": complaint.priority_score,
+            "status": complaint.status,
+            "flag_count": n,
+            "last_flagged_at": last.isoformat() if last else None,
+            "reasons": [{"reason": FLAG_REASON_LABELS.get(r, r), "note": note} for r, note in reasons],
+        })
+    return out
+
+
+@router.post("/{complaint_id}/flag", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def flag_complaint(
+    complaint_id: str,
+    payload: FlagCreate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_user),
+):
+    """A signed-in citizen reports a complaint (spam, misleading, duplicate,
+    abusive, wrong location). It lands in the officials' moderation queue
+    (GET /complaints/citizen-flags → Investment Flags page). It does NOT hide
+    or re-score the complaint automatically — a human decides."""
+    if not check_rate_limit("flag", current_user.id, 20, 60 * 60):
+        raise HTTPException(status_code=429, detail="Too many reports — try again later")
+    complaint = (await db.execute(select(Complaint).where(Complaint.id == complaint_id))).scalar_one_or_none()
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    if complaint.author_id == current_user.id:
+        raise HTTPException(status_code=400, detail="You can't report your own complaint")
+    existing = (await db.execute(
+        select(ComplaintFlag).where(ComplaintFlag.complaint_id == complaint_id, ComplaintFlag.user_id == current_user.id)
+    )).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=409, detail="You've already reported this complaint")
+    db.add(ComplaintFlag(complaint_id=complaint_id, user_id=current_user.id, reason=payload.reason, note=payload.note))
+    await db.flush()
+    return {"flagged": True, "message": "Thanks — an official will review this report."}
+
+
 # ── RELATED COMPLAINTS (Tier 2 + Tier 3) ──────────────────────────────────────
 @router.get("/{complaint_id}/related")
 async def get_related_complaints(
@@ -501,7 +576,9 @@ async def get_complaint(
 
     return {
         "id": complaint.id,
-        "author_id": complaint.author_id,
+        # Never expose the author's user id publicly — the client only needs to
+        # know whether *it* is the author (to show the dispute button).
+        "is_author": bool(current_user and complaint.author_id and complaint.author_id == current_user.id),
         "text_original": complaint.text_original,
         "text_translated": complaint.text_translated,
         "detected_language": complaint.detected_language,
@@ -602,6 +679,7 @@ async def vote(
         text=complaint.text_original,
         category=str(complaint.category.value if complaint.category else "other"),
         is_safety_risk=complaint.is_safety_risk,
+        population=await population_for(db, complaint.city, complaint.state),
         linked_area_count=complaint.linked_area_count,
         vote_count=new_vote_count,
     )
@@ -621,9 +699,22 @@ async def vote(
 async def add_comment(
     complaint_id: str,
     payload: CommentCreate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user),
 ):
+    # Every comment triggers an LLM place-scan, and anonymous commenting is
+    # allowed — cap per IP so it can't be used to burn API credit.
+    if not check_rate_limit("comment", client_ip(request), 30, 60 * 60):
+        raise HTTPException(status_code=429, detail="Too many comments — try again later")
+
+    # "[OFFICIAL FLAG]" is a reserved marker that feeds the Investment Flags
+    # list — only a verified official may write it, otherwise anyone could
+    # forge a flag by typing the prefix.
+    is_official = bool(current_user and current_user.role == UserRole.official)
+    if payload.text.lstrip().upper().startswith("[OFFICIAL FLAG]") and not is_official:
+        raise HTTPException(status_code=403, detail="That prefix is reserved for officials")
+
     result = await db.execute(select(Complaint).where(Complaint.id == complaint_id))
     complaint = result.scalar_one_or_none()
     if not complaint:
@@ -638,7 +729,10 @@ async def add_comment(
     comment = Comment(
         complaint_id=complaint_id,
         author_id=current_user.id if current_user else None,
-        author_name=payload.author_name or (current_user.name if current_user else "Anonymous"),
+        # Signed-in users always post under their own account name; only
+        # anonymous commenters may pick a display name (so nobody can post
+        # "as" an official or another user).
+        author_name=(current_user.name if current_user else (payload.author_name or "Anonymous")),
         author_area=payload.author_area or (current_user.area if current_user else None),
         text=payload.text,
         detected_places=detected_places,
@@ -686,9 +780,12 @@ async def add_comment(
 async def link_area(
     complaint_id: str,
     payload: LinkAreaCreate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user),
 ):
+    if not check_rate_limit("link_area", client_ip(request), 30, 60 * 60):
+        raise HTTPException(status_code=429, detail="Too many requests — try again later")
     result = await db.execute(select(Complaint).where(Complaint.id == complaint_id))
     complaint = result.scalar_one_or_none()
     if not complaint:
@@ -725,6 +822,7 @@ async def link_area(
         text=complaint.text_original,
         category=str(complaint.category.value if complaint.category else "other"),
         is_safety_risk=complaint.is_safety_risk,
+        population=await population_for(db, complaint.city, complaint.state),
         linked_area_count=complaint.linked_area_count,
         vote_count=vote_count,
     )
@@ -747,10 +845,13 @@ async def update_status(
     db: AsyncSession = Depends(get_db),
     official: User = Depends(require_official),
 ):
-    result = await db.execute(select(Complaint).where(Complaint.id == complaint_id))
+    # Officials may only change complaints inside their own jurisdiction
+    # (ward / city / state; central = nationwide) — reading is open to all
+    # officials, writing is not.
+    result = await db.execute(apply_jurisdiction(select(Complaint).where(Complaint.id == complaint_id), official))
     complaint = result.scalar_one_or_none()
     if not complaint:
-        raise HTTPException(status_code=404, detail="Complaint not found")
+        raise HTTPException(status_code=404, detail="Complaint not found in your jurisdiction")
 
     old_status = complaint.status
     complaint.status = payload.status
@@ -856,8 +957,11 @@ async def dispute_complaint(
 async def translate_complaint(
     complaint_id: str,
     payload: TranslateRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
+    if not check_rate_limit("translate", client_ip(request), 60, 60 * 60):
+        raise HTTPException(status_code=429, detail="Too many translations — try again later")
     result = await db.execute(select(Complaint).where(Complaint.id == complaint_id))
     complaint = result.scalar_one_or_none()
     if not complaint:
@@ -865,6 +969,8 @@ async def translate_complaint(
 
     text_to_translate = complaint.text_original
     translation = await translate_text(text_to_translate, payload.target_language)
+    if not translation.get("ok"):
+        raise HTTPException(status_code=503, detail="Translation service is unavailable right now — please try again")
 
     return {
         "original": text_to_translate,

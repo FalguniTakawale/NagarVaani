@@ -1,20 +1,29 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.models.models import ComplaintCategory, ComplaintStatus, OfficialLevel, OfficialVerificationStatus, UserRole
 
 
 # ── COMPLAINTS ────────────────────────────────────────────────────────────────
 class ImageIn(BaseModel):
-    url: str
-    caption: Optional[str] = None
+    url: str = Field(max_length=500)
+    caption: Optional[str] = Field(default=None, max_length=300)
     is_360: bool = False
+
+    @field_validator("url")
+    @classmethod
+    def _https_only(cls, v: str) -> str:
+        # Rendered into <img src> and window.open() on the client — never let a
+        # javascript:/data: URL through.
+        if not v.lower().startswith("https://"):
+            raise ValueError("image url must be https")
+        return v
 
 
 class ComplaintCreate(BaseModel):
-    text: str
+    text: str = Field(min_length=1, max_length=5000)
     # Normally the classifier decides the category. The corruption page pins it
     # so a bribery report can't be filed under "other" by a hesitant model.
     category: Optional[ComplaintCategory] = None
@@ -26,7 +35,7 @@ class ComplaintCreate(BaseModel):
     state: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    images: Optional[List[ImageIn]] = None
+    images: Optional[List[ImageIn]] = Field(default=None, max_length=10)
 
 
 class ComplaintListItem(BaseModel):
@@ -62,9 +71,9 @@ class VoteOut(BaseModel):
 
 # ── COMMENTS ──────────────────────────────────────────────────────────────────
 class CommentCreate(BaseModel):
-    text: str
-    author_name: Optional[str] = None
-    author_area: Optional[str] = None
+    text: str = Field(min_length=1, max_length=2000)
+    author_name: Optional[str] = Field(default=None, max_length=100)
+    author_area: Optional[str] = Field(default=None, max_length=100)
 
 
 class CommentOut(BaseModel):
@@ -78,16 +87,21 @@ class CommentOut(BaseModel):
 
 # ── LINKED AREAS / STATUS ─────────────────────────────────────────────────────
 class LinkAreaCreate(BaseModel):
-    area_name: Optional[str] = None
+    area_name: Optional[str] = Field(default=None, max_length=100)
 
 
 class StatusUpdate(BaseModel):
     status: ComplaintStatus
-    note: Optional[str] = None
+    note: Optional[str] = Field(default=None, max_length=500)
 
 
 class DisputeCreate(BaseModel):
-    note: Optional[str] = None
+    note: Optional[str] = Field(default=None, max_length=500)
+
+
+class FlagCreate(BaseModel):
+    reason: str = Field(pattern="^(spam|misleading|duplicate|abusive|wrong_location|other)$")
+    note: Optional[str] = Field(default=None, max_length=500)
 
 
 # ── TRANSLATION ───────────────────────────────────────────────────────────────
@@ -103,9 +117,9 @@ class TranslateResponse(BaseModel):
 
 # ── AUTH ──────────────────────────────────────────────────────────────────────
 class UserCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=100)
     email: EmailStr
-    password: str
+    password: str = Field(max_length=72)  # bcrypt ignores/rejects bytes past 72
     role: UserRole = UserRole.citizen
     official_level: Optional[OfficialLevel] = None  # only meaningful when role=official
     state: Optional[str] = None
@@ -117,7 +131,7 @@ class UserCreate(BaseModel):
 
 class UserLogin(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(max_length=72)
 
 
 class RegisterOut(BaseModel):
@@ -129,7 +143,7 @@ class RegisterOut(BaseModel):
 
 class VerifyEmailRequest(BaseModel):
     user_id: str
-    otp: str
+    otp: str = Field(max_length=12)
 
 
 class ResendOtpRequest(BaseModel):
@@ -142,8 +156,8 @@ class ForgotPasswordRequest(BaseModel):
 
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
-    otp: str
-    new_password: str
+    otp: str = Field(max_length=12)
+    new_password: str = Field(max_length=72)
 
 
 class GoogleAuthRequest(BaseModel):

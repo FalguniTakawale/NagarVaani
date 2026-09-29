@@ -11,6 +11,8 @@ from app.models.models import (
     Comment,
     LinkedArea,
     StatusLog,
+    ComplaintFlag,
+    RegionIndicator,
 )
 
 __all__ = [
@@ -26,4 +28,6 @@ __all__ = [
     "Comment",
     "LinkedArea",
     "StatusLog",
+    "ComplaintFlag",
+    "RegionIndicator",
 ]

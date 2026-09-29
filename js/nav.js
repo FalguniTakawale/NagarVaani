@@ -22,7 +22,7 @@ const pageDisplay = {
   home: 'flex', nearme: 'flex', mycomplaints: 'flex', myvotes: 'flex',
   detail: 'block', submit: 'block', govt: 'block', login: 'block', corruption: 'block',
   landing: 'block', about: 'block', track: 'block', forofficials: 'block',
-  govtschemes: 'block', trending: 'block', impact: 'block', orgsupport: 'block',
+  govtschemes: 'block', trending: 'block', impact: 'block', orgsupport: 'block', levels: 'block',
 };
 
 export let currentComplaintId = null;
@@ -36,6 +36,11 @@ export function setCurrentSort(sort) { currentSort = sort; }
 // pages on popstate instead of pushing again) so back/forward move between
 // in-app pages first, the way a normal multi-page site would.
 let historyStarted = false;
+
+// Shareable URL fragment: a complaint gets #complaint/<id>, everything else #<page>.
+function hashFor(state) {
+  return state.page === 'detail' && state.id ? '#complaint/' + encodeURIComponent(state.id) : '#' + state.page;
+}
 
 export function nav(page, opts = {}) {
   const { fromPopstate = false } = opts;
@@ -98,9 +103,9 @@ export function nav(page, opts = {}) {
     // rather than landing on a phantom duplicate of the same page.
     if (!historyStarted) {
       historyStarted = true;
-      history.replaceState(state, '', '#' + page);
+      history.replaceState(state, '', hashFor(state));
     } else {
-      history.pushState(state, '', '#' + page);
+      history.pushState(state, '', hashFor(state));
     }
   }
 }

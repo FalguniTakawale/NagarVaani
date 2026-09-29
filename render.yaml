@@ -20,9 +20,23 @@ services:
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
-      - key: ANTHROPIC_API_KEY
+      - key: GEMINI_API_KEY        # default LLM provider (ai_engine.py) — without it every AI step fails open
+        sync: false
+      - key: ANTHROPIC_API_KEY     # only if _PROVIDER is switched to "anthropic"
+        sync: false
+      - key: HUGGINGFACE_API_KEY   # default speech-to-text (stt.py)
         sync: false
       - key: OPENAI_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
         sync: false
       - key: CLOUDINARY_CLOUD_NAME
         sync: false

@@ -165,8 +165,11 @@ async def classify_complaint(text: str) -> dict:
 Extract:
 1. category — one of: drainage, road, garbage, electricity, tree_hazard, water_supply, corruption, other
 2. severity — one of: immediate_safety (physical harm in <72hrs), moderate, low
-3. detected_language — ISO 639-1 code (e.g. "hi" for Hindi, "mr" for Marathi, "en" for English)
-4. translated_text — English translation of the complaint (if already English, repeat it)
+3. detected_language — ISO 639-1 code of the LANGUAGE spoken, regardless of script (e.g. "hi" for Hindi, "mr" for Marathi, "en" for English).
+   IMPORTANT: Hindi/Marathi/Tamil/etc. typed in Latin letters ("Hinglish", e.g. "Naali bhar gayi hai, paani ghar mein ghus raha hai")
+   is NOT English — detect it as "hi"/"mr"/"ta".
+4. translated_text — natural, fluent English translation of the complaint. Only repeat the text unchanged if it is genuinely written in English.
+   Romanised Hindi/Marathi/etc. MUST be translated into English (e.g. "The drain is overflowing and water is entering the house.")
 5. location_hint — any location mentioned in the text (street, landmark, area) or null
 6. is_safety_risk — true if severity is immediate_safety, else false
 
@@ -363,28 +366,67 @@ No markdown, no explanation."""
 
 
 # ── TRANSLATION ───────────────────────────────────────────────────────────────
+_LANG_NAME_BY_CODE = {"en": "English", "hi": "Hindi", "mr": "Marathi", "ta": "Tamil", "bn": "Bengali",
+                      "te": "Telugu", "gu": "Gujarati", "kn": "Kannada", "ml": "Malayalam", "pa": "Punjabi",
+                      "ur": "Urdu", "pt": "Portuguese", "ru": "Russian", "zh": "Chinese"}
+
+
 async def translate_text(text: str, target_language: str = "en") -> dict:
     """
     Translate text to target language.
-    Returns: {translated, detected_language}
-    """
-    prompt = f"""Translate the following text to {target_language}.
-If it's already in {target_language}, return it unchanged.
+    Returns: {translated, detected_language, ok}
 
-Text: "{text}"
+    `ok` is False when the model call failed or returned the text unchanged
+    even though it isn't in the target language — callers surface that to the
+    user instead of silently showing the same text as a "translation".
+
+    Romanised text ("Hinglish": Hindi/Marathi/Tamil typed in Latin letters) is
+    explicitly NOT treated as already being English — that was the bug where
+    "Naali bhar gayi hai, paani ghar mein ghus raha hai" came back unchanged.
+    """
+    target_name = _LANG_NAME_BY_CODE.get((target_language or "en").lower(), target_language)
+
+    def build_prompt(strict: bool) -> str:
+        extra = (
+            "\nThe previous attempt returned the text unchanged. The text is very likely Romanised Hindi/Marathi/Tamil "
+            f"(Latin letters) — translate its MEANING into {target_name}; do not copy it.\n" if strict else ""
+        )
+        return f"""Translate the following text into {target_name}.
+
+Rules:
+- The text may be in any language and any script, including Indian languages typed in Latin letters
+  ("Hinglish", e.g. "Naali bhar gayi hai, paani ghar mein ghus raha hai"). Romanised Hindi is Hindi, NOT English:
+  translate its meaning.
+- Only return the text unchanged if it is genuinely already written in {target_name}.
+- Keep names, numbers and place names as they are.{extra}
+
+Text: {json.dumps(text, ensure_ascii=False)}
 
 Respond ONLY with valid JSON, no markdown:
 {{
   "translated": "translation here",
-  "detected_language": "ISO 639-1 code of source language"
+  "detected_language": "ISO 639-1 code of the source language (use hi for Romanised Hindi)"
 }}"""
 
-    try:
-        raw = _call_llm(prompt, max_tokens=500)
-        raw = re.sub(r"```(?:json)?|```", "", raw).strip()
-        return json.loads(raw)
-    except Exception:
-        return {"translated": text, "detected_language": "en"}
+    def norm(x: str) -> str:
+        return re.sub(r"\W+", " ", (x or "").lower()).strip()
+
+    for strict in (False, True):
+        try:
+            raw = _call_llm(build_prompt(strict), max_tokens=800)
+            raw = re.sub(r"```(?:json)?|```", "", raw).strip()
+            data = json.loads(raw)
+            translated = (data.get("translated") or "").strip()
+            detected = (data.get("detected_language") or "").lower() or None
+            if not translated:
+                continue
+            same_lang = detected == (target_language or "en").lower()
+            if norm(translated) == norm(text) and not same_lang and not strict:
+                continue  # unchanged although the source is another language → retry once, stricter
+            return {"translated": translated, "detected_language": detected, "ok": True}
+        except Exception:
+            continue
+    return {"translated": text, "detected_language": None, "ok": False}
 
 
 # ── HOME-PAGE CHATBOT ──────────────────────────────────────────────────────────

@@ -63,6 +63,7 @@ export function setOfficialView(view) {
   else if (view === 'resolved') loadOfficialQueue('resolved');
   else if (view === 'map') loadHotspotMapFull();
   else if (view === 'flags') loadInvestmentFlags();
+  else if (view === 'projects') loadPriorityProjects();
   else if (view === 'verify') loadVerificationQueue();
 }
 
@@ -364,7 +365,13 @@ export async function loadInvestmentFlags() {
     <div class="off-table flags">
       <div class="off-thead"><div>Complaint</div><div>Score</div><div>Recommended cost</div><div>Flagged by</div><div>Date</div></div>
       <div id="off-rows">${loadingPlaceholder()}</div>
+    </div>
+    ${sectionHeader('Citizen reports', 'Complaints that signed-in citizens reported as spam, misleading, duplicate, abusive or wrong-location (the ⚑ Flag button on a complaint page). Nothing is hidden automatically — review and act.')}
+    <div class="off-table flags">
+      <div class="off-thead"><div>Complaint</div><div>Score</div><div>Reports</div><div>Reasons</div><div>Last</div></div>
+      <div id="off-report-rows">${loadingPlaceholder()}</div>
     </div>`;
+  loadCitizenReports();
   try {
     const items = await api('/complaints/flagged');
     const rows = document.getElementById('off-rows');
@@ -385,6 +392,60 @@ export async function loadInvestmentFlags() {
     }).join('');
   } catch (err) {
     document.getElementById('off-rows').innerHTML = `<div class="off-empty" style="color:#DC2626">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function loadCitizenReports() {
+  const box = document.getElementById('off-report-rows');
+  try {
+    const items = await api('/complaints/citizen-flags');
+    if (!items.length) { box.innerHTML = `<div class="off-empty">No citizen reports in your jurisdiction.</div>`; return; }
+    box.innerHTML = items.map(f => `
+      <div class="off-row flags" onclick="offOpenDetail('${escapeHtml(f.id)}')">
+        <div class="off-title">${escapeHtml(f.title)}</div>
+        <div class="off-score ${scoreClass(f.priority_score)}">${Math.round(f.priority_score)}</div>
+        <div><b>${f.flag_count}</b></div>
+        <div>${f.reasons.map(r => escapeHtml(r.reason) + (r.note ? ` — “${escapeHtml(r.note)}”` : '')).join('<br>')}</div>
+        <div class="off-age">${f.last_flagged_at ? new Date(f.last_flagged_at).toLocaleDateString() : '—'}</div>
+      </div>`).join('');
+  } catch (err) {
+    box.innerHTML = `<div class="off-empty" style="color:#DC2626">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+/* ── priority projects (policy insights) ──
+   Live aggregation of unresolved complaints by city × category, ranked by the
+   sum of priority scores. No cost figures — no cost dataset exists. */
+export async function loadPriorityProjects() {
+  const main = document.getElementById('off-main');
+  main.innerHTML = `
+    ${sectionHeader('Priority Projects', 'Demand hotspots in your jurisdiction — where unresolved, high-severity reports concentrate — with a suggested project type. Ranked by severity-weighted demand, not vote count.')}
+    <div id="off-proj-body">${loadingPlaceholder()}</div>`;
+  const body = document.getElementById('off-proj-body');
+  try {
+    const [res, datasets] = await Promise.all([api('/insights/priority-projects'), api('/insights/datasets')]);
+    const cov = datasets.length
+      ? datasets.map(d => `${escapeHtml(d.indicator)} (${d.rows} rows${d.latest_year ? ', ' + d.latest_year : ''})`).join(' · ')
+      : 'none loaded — population defaults to 10,000 and per-capita figures are hidden';
+    if (!res.hotspots.length) {
+      body.innerHTML = `<div class="off-empty">No unresolved reports in your jurisdiction.</div>`;
+    } else {
+      body.innerHTML = `
+        <div class="off-table flags">
+          <div class="off-thead"><div>Hotspot</div><div>Demand</div><div>Open / critical</div><div>Suggested project type</div><div>External data</div></div>
+          ${res.hotspots.map(h => `
+            <div class="off-row flags" onclick="offOpenDetail('${escapeHtml(h.evidence_complaint_ids[0])}')">
+              <div class="off-title">${escapeHtml(h.city)}${h.state ? ', ' + escapeHtml(h.state) : ''} · ${escapeHtml(h.category.replace('_', ' '))}<div class="off-flag-note">${escapeHtml(h.rationale)}</div></div>
+              <div class="off-score ${scoreClass(Math.min(100, h.avg_score))}">${h.demand_index}</div>
+              <div>${h.open_reports} / <b>${h.critical_reports}</b>${h.reports_per_100k != null ? `<div class="off-cost-src">${h.reports_per_100k} per 100k people</div>` : ''}</div>
+              <div>${escapeHtml(h.suggested_project)}<div class="off-cost-src">cost: not estimated (no cost dataset)</div></div>
+              <div class="off-cost-src">${h.external_data_used.length ? 'used: ' + h.external_data_used.map(escapeHtml).join(', ') : 'none'}<br>missing: ${h.external_data_missing.map(escapeHtml).join(', ')}</div>
+            </div>`).join('')}
+        </div>`;
+    }
+    body.insertAdjacentHTML('beforeend', `<div class="off-cost-src" style="margin-top:12px;"><b>Method:</b> ${escapeHtml(res.method)}.<br><b>Loaded datasets:</b> ${cov}</div>`);
+  } catch (err) {
+    body.innerHTML = `<div class="off-empty" style="color:#DC2626">${escapeHtml(err.message)}</div>`;
   }
 }
 

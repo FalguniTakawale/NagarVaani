@@ -234,16 +234,18 @@ export async function loadComplaintDetail(id) {
     // Whole section (header included) disappears when there are no images.
     document.getElementById('gallery-section').style.display = images.length ? 'block' : 'none';
     gallery.innerHTML = images.map(img => {
-      const url = escapeHtml(img.url || '');
+      // Only https URLs are ever linked/rendered (blocks javascript:/data: URLs
+      // from old or hand-crafted records). No inline JS with data in it.
+      const url = /^https:\/\//i.test(img.url || '') ? escapeHtml(img.url) : '';
       const alt = escapeHtml(img.caption || 'Complaint photo');
       return `
       <div class="gallery-item">
-        <div class="gallery-thumb" onclick="window.open('${url}','_blank')">
+        <a class="gallery-thumb" href="${url}" target="_blank" rel="noopener noreferrer" style="display:block;">
           <img src="${url}" loading="lazy" alt="${alt}" style="width:100%;height:100%;object-fit:cover;"
                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
           <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;flex-direction:column;gap:4px;font-size:12px;color:var(--slate);">📷<span>Image unavailable</span></div>
           ${img.is_360 ? '<div class="gallery-360-badge">360°</div>' : ''}
-        </div>
+        </a>
         <div class="gallery-caption"><div class="gallery-caption-label">Caption</div>${escapeHtml(img.caption || '')}</div>
       </div>`;
     }).join('');
@@ -285,7 +287,7 @@ export async function loadComplaintDetail(id) {
     // Only the original complainant can dispute, and only once it's marked resolved —
     // the backend enforces both; this just avoids showing a button that will 403/400.
     const disputeBtn = document.getElementById('dispute-btn');
-    const isAuthor = authUser && c.author_id && authUser.id === c.author_id;
+    const isAuthor = !!c.is_author;
     disputeBtn.style.display = (c.status === 'resolved' && isAuthor) ? 'flex' : 'none';
 
     document.getElementById('govt-response-section').style.display = c.official_brief ? 'block' : 'none';

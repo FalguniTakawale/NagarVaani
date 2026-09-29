@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -7,7 +7,7 @@ from pathlib import Path
 
 from app.config import get_settings
 from app.database import create_tables
-from app.routers import admin, auth, chatbot, complaints, media, stats, subscriptions, telegram, translate
+from app.routers import admin, auth, chatbot, complaints, insights, media, stats, subscriptions, telegram, translate
 
 settings = get_settings()
 IS_DEV = settings.environment.lower() == "development"
@@ -56,6 +56,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    """Baseline hardening headers. No CSP yet: the frontend still uses inline
+    onclick handlers, so a strict CSP would break it (documented in SECURITY.md)."""
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), geolocation=(self), microphone=(self)")
+    if not IS_DEV:
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return response
+
+
 # Routers
 app.include_router(auth.router, prefix="/api")
 app.include_router(complaints.router, prefix="/api")
@@ -66,6 +80,7 @@ app.include_router(translate.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(chatbot.router, prefix="/api")
 app.include_router(subscriptions.router, prefix="/api")
+app.include_router(insights.router, prefix="/api")
 
 
 @app.get("/api/health")

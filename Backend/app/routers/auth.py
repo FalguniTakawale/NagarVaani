@@ -33,6 +33,20 @@ RESEND_WINDOW = 60 * 60
 RESET_LIMIT = 3
 RESET_WINDOW = 60 * 60
 
+# Brute-force guards. A 6-digit OTP has only 1,000,000 values, and a correct one
+# returns a login token, so guessing must be capped hard (per account AND per IP).
+LOGIN_LIMIT, LOGIN_WINDOW = 10, 15 * 60          # per IP and per email
+OTP_TRY_LIMIT, OTP_TRY_WINDOW = 5, 15 * 60       # wrong-or-right attempts per account
+
+
+def _throttle(bucket: str, key: str, limit: int, window: int, detail: str) -> None:
+    if not check_rate_limit(bucket, key, limit, window):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=detail,
+            headers={"Retry-After": str(seconds_until_reset(bucket, key, window))},
+        )
+
+
 UNVERIFIED_MSG = "Please verify your email. Check your inbox for the OTP."
 
 
@@ -61,7 +75,8 @@ async def _issue_otp(db: AsyncSession, user: User) -> None:
 
 
 @router.post("/register", response_model=RegisterOut, status_code=status.HTTP_201_CREATED)
-async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register(payload: UserCreate, request: Request, db: AsyncSession = Depends(get_db)):
+    _throttle("register_ip", client_ip(request), 10, 60 * 60, "Too many sign-ups from this network — try again later")
     if error := validate_password(payload.password):
         raise HTTPException(status_code=400, detail=error)
 
@@ -105,12 +120,17 @@ async def register(payload: UserCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/verify-email", response_model=TokenOut)
-async def verify_email(payload: VerifyEmailRequest, db: AsyncSession = Depends(get_db)):
+async def verify_email(payload: VerifyEmailRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    _throttle("verify_otp", payload.user_id, OTP_TRY_LIMIT, OTP_TRY_WINDOW, "Too many attempts — request a new code and try again later")
+    _throttle("verify_otp_ip", client_ip(request), 30, OTP_TRY_WINDOW, "Too many attempts — try again later")
     user = (await db.execute(select(User).where(User.id == payload.user_id))).scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="Account not found")
     if user.is_email_verified:
-        return _token_out(user)  # already done — harmless, just log them in
+        # Never hand out a token here: this endpoint takes only a user_id + OTP,
+        # so returning one for an already-verified account would let anyone who
+        # learns a user_id log in as them. They must use /auth/login.
+        raise HTTPException(status_code=400, detail="This email is already verified — please sign in with your password")
 
     record = (await db.execute(
         select(EmailVerification)
@@ -152,7 +172,9 @@ async def resend_otp(payload: ResendOtpRequest, db: AsyncSession = Depends(get_d
 
 
 @router.post("/login", response_model=TokenOut)
-async def login(payload: UserLogin, db: AsyncSession = Depends(get_db)):
+async def login(payload: UserLogin, request: Request, db: AsyncSession = Depends(get_db)):
+    _throttle("login_ip", client_ip(request), LOGIN_LIMIT * 3, LOGIN_WINDOW, "Too many sign-in attempts — try again later")
+    _throttle("login_email", payload.email.lower(), LOGIN_LIMIT, LOGIN_WINDOW, "Too many sign-in attempts for this account — try again later")
     user = (await db.execute(select(User).where(User.email == payload.email))).scalar_one_or_none()
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -196,7 +218,9 @@ async def forgot_password(payload: ForgotPasswordRequest, db: AsyncSession = Dep
 
 
 @router.post("/reset-password", response_model=TokenOut)
-async def reset_password(payload: ResetPasswordRequest, db: AsyncSession = Depends(get_db)):
+async def reset_password(payload: ResetPasswordRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    _throttle("reset_try", payload.email.lower(), OTP_TRY_LIMIT, OTP_TRY_WINDOW, "Too many attempts — request a new code and try again later")
+    _throttle("reset_try_ip", client_ip(request), 30, OTP_TRY_WINDOW, "Too many attempts — try again later")
     if error := validate_password(payload.new_password):
         raise HTTPException(status_code=400, detail=error)
 

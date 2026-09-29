@@ -2,7 +2,7 @@
 
 A civic-intelligence layer between citizens and government. Citizens report
 infrastructure problems in any language — by web form, voice note, or Telegram.
-Claude scores every complaint on **severity, season, population density and
+AI scores every complaint on **severity, season, population density and
 cross-district patterns — not vote count** — so a village of fifty gets heard on
 merit. Officials get AI-synthesised briefs, a live hotspot map, and a queue
 sorted by what actually matters.
@@ -15,6 +15,19 @@ Public Infrastructure & Governance.
 
 Licensed under [MIT](LICENSE) — see [PRIVACY.md](PRIVACY.md) for what data the
 platform actually collects and where it goes.
+
+### Documentation
+
+| Doc | What's in it |
+|---|---|
+| [`docs/APP_OVERVIEW.md`](docs/APP_OVERVIEW.md) | What the app does, who uses it, how a complaint travels, what L1–L5 mean, what Share / Flag do |
+| [`docs/REALITY_MATRIX.md`](docs/REALITY_MATRIX.md) | **Real vs demo vs stub** — every feature, data source and button, plus where to expand |
+| [`docs/CHALLENGE_ALIGNMENT.md`](docs/CHALLENGE_ALIGNMENT.md) | Coverage of the hackathon challenge, honest gaps, next steps, demo script |
+| [`SECURITY.md`](SECURITY.md) | Security audit: what was fixed, what remains |
+| [`docs/NagarVaani_Project_Document.pdf`](docs/NagarVaani_Project_Document.pdf) | All of the above as one PDF for submission |
+| [`PRIVACY.md`](PRIVACY.md) | What data is collected and where it goes |
+
+In the app itself: **"How scoring works (L1–L5)"** (left nav / footer) explains the levels in plain language.
 
 ---
 
@@ -30,19 +43,19 @@ gap rather than quietly building only the easy 80%:
   schemes/ministries/languages, not re-architecting the platform — the
   scoring engine, translation pipeline, and dashboards are already
   country-agnostic — but that data layer doesn't exist yet for anyone but India.
-- **No external dataset ingestion**: the priority scorer's population factor
-  is `population=10000`, hardcoded at the call site (see `complaints.py`) —
-  there's no real census/demographic dataset behind it. Infrastructure-index
-  data and public investment-plan data aren't ingested at all. The platform
-  surfaces real complaint-density hotspots (that part is genuine), but it
-  doesn't yet combine that with external government planning data the way
-  the challenge asks.
-- **No automated project recommendations**: officials can flag a complaint
-  as an infrastructure gap, but there's no model generating a specific
-  "build X here, costing Y" recommendation from data. An earlier version of
-  this prototype showed a fabricated ₹-cost figure for this; it was removed
-  on purpose rather than replaced with another invented number, and hasn't
-  been replaced with a real one yet.
+- **External datasets are a provision, not bundled data**: an admin can load
+  census population / infrastructure index / planned-investment rows
+  (`region_indicators`, `POST /api/insights/indicators[/csv]`,
+  `python load_indicators.py file.csv`). Population then feeds the L4 score
+  and per-100k rates; until something is loaded L4 uses a default population
+  of 10,000. Infra-index and investment data are stored and reported as
+  "used / missing" but no formula uses them yet.
+- **Project recommendations are rule-based, with no costs**: the official
+  portal's **Priority Projects** view ranks city × category hotspots by
+  severity-weighted demand and suggests a generic project type with evidence
+  links. There is no cost or forecasting model — an earlier fabricated ₹
+  figure was removed on purpose and has not been replaced.
+- **No WhatsApp**: web, mic and Telegram are built; WhatsApp is not.
 
 What's already real and working: multilingual voice/text/Telegram intake,
 AI severity scoring (not vote-based), cross-district pattern detection,
@@ -59,11 +72,11 @@ directory for India.
 git clone <repo>
 cd Backend
 cp .env.example .env
-# Fill in ANTHROPIC_API_KEY (required), others optional for local dev
+# Fill in GEMINI_API_KEY (required for AI), others optional for local dev
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python setup_db.py
-python seed_data.py     # makes ~20 Claude API calls, takes ~30 seconds
+python seed_data.py     # DEMO DATA ONLY — never run on a public deployment (see SECURITY.md)
 uvicorn main:app --reload --port 8000
 # Open nagarvaani-full.html in browser
 ```
@@ -71,7 +84,7 @@ uvicorn main:app --reload --port 8000
 With the backend running you can also open <http://127.0.0.1:8000/> — FastAPI
 serves the frontend too, which is how the Render deployment works.
 
-Seeded logins:
+Seeded logins (**demo only — do not seed a real deployment**):
 
 | Role | Email | Password |
 |---|---|---|
@@ -86,12 +99,13 @@ All read from `Backend/.env` (see `.env.example`).
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | **Yes** | Claude — filter, classify, brief, NLP, translation. Without it every AI call fails open (complaint accepted, category `other`). |
+| `GEMINI_API_KEY` | **Yes** (default provider) | Gemini free tier — filter, classify, brief, NLP, translation. Without it every AI call fails open (complaint accepted, category `other`). |
+| `ANTHROPIC_API_KEY` | Only if you switch `_PROVIDER` to `"anthropic"` in `ai_engine.py` | Claude instead of Gemini. |
+| `HUGGINGFACE_API_KEY` | For voice notes (default STT) | Whisper via Hugging Face; or use `GROQ_API_KEY` / `OPENAI_API_KEY` and flip `_PROVIDER` in `stt.py`. |
 | `DATABASE_URL` | Yes | `sqlite+aiosqlite:///./nagarvaani.db` for local, or a Postgres URL. `postgres://` / `postgresql://` are rewritten to the asyncpg driver automatically. |
 | `JWT_SECRET` | Yes in prod | Signs login tokens. The default `dev-secret-change-me` is refused unless `ENVIRONMENT=development`. |
 | `ENVIRONMENT` | No (`development`) | `development` = open CORS, default JWT allowed, unsecured Telegram webhook allowed. Anything else = locked down. |
 | `FRONTEND_URL` | Yes in prod | The only CORS origin allowed outside development. Comma-separate for several. |
-| `OPENAI_API_KEY` | No | Whisper speech-to-text for voice notes (web mic + Telegram). Claude has no audio input. |
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | No | Complaint photo / 360° uploads. Without them uploads return a clear error and the complaint submits without images. |
 | `TELEGRAM_BOT_TOKEN` | No | From @BotFather. Enables the `/api/telegram/webhook` channel. |
 | `TELEGRAM_WEBHOOK_SECRET` | Prod if bot used | Random string; pass the same value as `secret_token` to `setWebhook`. Requests without it get a bare 403. |
@@ -113,7 +127,7 @@ All read from `Backend/.env` (see `.env.example`).
  ┌────────────────────────── FastAPI (Backend/) ─┴───────────────────────────┐
  │  routers/   auth · complaints · stats · media · telegram                  │
  │                                                                           │
- │  services/ai_engine.py   ── Claude ──►  0 Whisper STT (only if audio)     │
+ │  services/ai_engine.py   ── LLM ─────►  0 Whisper STT (only if audio)     │
  │     per submission:                     1 Filter   reject political/     │
  │                                                    communal framing       │
  │                                         2 Classify category · severity · │
@@ -157,13 +171,18 @@ All under `/api`. Interactive docs at `/docs` when the server is running.
 | `GET` | `/complaints/{id}` | — | Full detail: breakdown, images, comments, linked areas, status log |
 | `GET` | `/complaints/{id}/related` | — | Similar-in-area + cross-pattern complaints |
 | `POST` | `/complaints/{id}/vote` | citizen | Vote once; solidarity if from another ward. Re-scores. |
-| `POST` | `/complaints/{id}/comments` | optional | Comment; Claude scans for place names and auto-links them |
+| `POST` | `/complaints/{id}/comments` | optional | Comment; the AI scans for place names and auto-links them |
 | `POST` | `/complaints/{id}/link-area` | optional | "Same issue in my area" — feeds the L5 bonus, re-scores |
-| `PATCH` | `/complaints/{id}/status` | official | `open \| in_progress \| resolved \| rejected`, logged |
+| `PATCH` | `/complaints/{id}/status` | official (own jurisdiction only) | `open \| in_progress \| resolved \| rejected`, logged |
 | `POST` | `/complaints/{id}/dispute` | author | Reopen a *resolved* complaint as `disputed` |
 | `POST` | `/complaints/{id}/translate` | — | Translate complaint text to `target_language` |
 | `POST` | `/translate` | — | Translate any text (comments) — `{text, target_language}` |
+| `POST` | `/complaints/{id}/flag` | citizen | Report a complaint (spam / misleading / duplicate / abusive / wrong_location) → moderation queue. One per user per complaint. |
+| `GET` | `/complaints/citizen-flags` | official | Citizen-report moderation queue (jurisdiction-scoped) |
 | `GET` | `/complaints/flagged` | official | Complaints carrying an `[OFFICIAL FLAG]` comment — the Investment Flags list |
+| `GET` | `/insights/priority-projects` | official | Ranked demand hotspots + suggested project type (no costs) |
+| `GET` | `/insights/datasets` | official | Which external datasets are loaded |
+| `POST` | `/insights/indicators`, `/insights/indicators/csv` | admin | Ingest census / infra-index / investment rows (source required) |
 | `GET` | `/stats/ward?ward=` | — | open / critical / in-progress / resolved counts |
 | `GET` | `/stats/jurisdiction` | official | Tiles + badge counts scoped to the official's own ward / city / state |
 | `GET` | `/stats/nationwide` | — | Totals + per-state hotspot rollup |
@@ -213,7 +232,7 @@ the environment variables from the table above with `ENVIRONMENT=production`.
 ```
 nagarvaani-full.html   all pages (citizen app + official portal)
 css/styles.css
-js/                    api · nav · feed · detail · submit · nearme · corruption · official · govt · auth · voice · i18n · ui · main
+js/                    api · nav · feed · detail · share · submit · nearme · corruption · official · govt · auth · voice · i18n · ui · main
 Backend/
   main.py              app, CORS, startup guard, serves the frontend
   setup_db.py          create tables (SQLite or Postgres)
@@ -223,7 +242,7 @@ Backend/
     database.py        async engine / session
     models/models.py   User · District · Complaint · Vote · Comment · LinkedArea · StatusLog
     schemas/           pydantic request/response shapes
-    routers/           auth · complaints · stats · media · telegram · translate
+    routers/           auth · complaints · stats · media · telegram · translate · insights · admin · chatbot · subscriptions
     services/          ai_engine · auth · email · jurisdiction · rate_limit · stt · media_storage · telegram_client
 render.yaml            Render Blueprint
 ```

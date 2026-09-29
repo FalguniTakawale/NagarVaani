@@ -8,6 +8,7 @@ import { applyLanguage, setLanguage, toggleLangMenu, t } from './i18n.js';
 import { nav, openComplaint, topbarSearch, trackComplaintById } from './nav.js';
 import { toggleRecording } from './voice.js';
 import { sortToggle, selectCat, voteUp, quickVote, setMyStatusFilter, filterTrendingByArea, clearTrendingAreaFilter, toggleSchemesPanel, toggleNotifMenu, refreshNotifDot, translateCardTitle } from './feed.js';
+import { openShare, shareNative, copyShareLink, openFlag, submitFlag, closeOverlay } from './share.js';
 import { doVote, doSameIssue, postComment, doTranslate, doDispute, translateComment } from './detail.js';
 import {
   submitComplaint, captureLocation,
@@ -25,7 +26,7 @@ import { toggleChatbotPanel, sendChatbotMessage, askChatbotSuggestion } from './
 import {
   switchToOfficialMode, switchToCitizenMode, offLogout, offOpenDetail, setOfficialView,
   loadOfficialQueue, expandQueueRow, officialAction, postOfficialResponse,
-  loadHotspotMapFull, setOffMapScope, loadInvestmentFlags,
+  loadHotspotMapFull, setOffMapScope, loadInvestmentFlags, loadPriorityProjects,
   loadVerificationQueue, approveOfficialApplication, rejectOfficialApplication,
 } from './official.js';
 import {
@@ -57,6 +58,7 @@ Object.assign(window, {
   toggleNotifMenu, translateCardTitle,
   toggleChatbotPanel, sendChatbotMessage, askChatbotSuggestion,
   sendVolunteerInterest, sendOrgPartnerInterest,
+  openShare, shareNative, copyShareLink, openFlag, submitFlag, closeOverlay,
   doVote, doSameIssue, postComment, doTranslate, doDispute, translateComment,
   submitComplaint, captureLocation,
   handlePhotoSelect, setPhotoCaption, togglePhoto360, removePhoto,
@@ -67,7 +69,7 @@ Object.assign(window, {
   submitCorruption,
   switchToOfficialMode, switchToCitizenMode, offLogout, offOpenDetail, setOfficialView,
   loadOfficialQueue, expandQueueRow, officialAction, postOfficialResponse,
-  loadHotspotMapFull, setOffMapScope, loadInvestmentFlags,
+  loadHotspotMapFull, setOffMapScope, loadInvestmentFlags, loadPriorityProjects,
   loadVerificationQueue, approveOfficialApplication, rejectOfficialApplication,
   switchAuthTab, switchAuthTabByName, selectRole, selectSignupRole,
   goToStep, doSignIn, completeSignup, startOfficialSignup,
@@ -89,7 +91,12 @@ if (!document.body.classList.contains('official-mode')) {
   // Falls back to the landing page only for a genuinely first-ever visit
   // (or the state predates this history.state field entirely).
   const restoreState = history.state;
-  if (restoreState && restoreState.page === 'detail' && restoreState.id) {
+  // A shared link (#complaint/<id>) opens that complaint directly — this is
+  // what the Share dialog produces.
+  const deepLink = /^#complaint\/([^/?#]+)/.exec(location.hash);
+  if (deepLink) {
+    openComplaint(decodeURIComponent(deepLink[1]));
+  } else if (restoreState && restoreState.page === 'detail' && restoreState.id) {
     openComplaint(restoreState.id);
   } else if (restoreState && restoreState.page) {
     nav(restoreState.page);
