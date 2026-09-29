@@ -79,6 +79,14 @@ Object.assign(window, {
 });
 
 // Init
+// autocomplete="off" is only a hint — Chrome still re-offers a value it has
+// already collected for a field on this origin (e.g. an email typed
+// elsewhere on the page), regardless of that attribute. Explicitly clearing
+// it after the browser's own autofill pass is the only reliable way to stop
+// the topbar search box from showing up pre-filled with someone's email.
+const topbarSearchInput = document.getElementById('topbar-search-input');
+if (topbarSearchInput) topbarSearchInput.value = '';
+
 applyLanguage();   // restores the language saved in localStorage ('nv_lang')
 applyAuthUI();     // officials are switched straight into the portal here
 if (!document.body.classList.contains('official-mode')) {
