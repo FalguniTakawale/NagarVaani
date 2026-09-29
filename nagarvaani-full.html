@@ -21,7 +21,7 @@
   <div class="topbar-spacer"></div>
   <div class="topbar-search">
     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input id="topbar-search-input" placeholder="Search complaints, areas…" data-i18n-placeholder="top.search" onkeydown="if(event.key==='Enter')topbarSearch(this.value)" />
+    <input id="topbar-search-input" placeholder="Search complaints, areas…" data-i18n-placeholder="top.search" autocomplete="off" name="nv-topbar-search" onkeydown="if(event.key==='Enter')topbarSearch(this.value)" />
   </div>
   <div class="lang-wrap">
     <button class="lang-btn" id="topbar-lang-btn" onclick="toggleLangMenu(event)">EN ▾</button>
