@@ -268,16 +268,26 @@ All under `/api`. Interactive docs at `/docs` when the server is running.
 
 ## Deploy to Render
 
-The repo ships a `render.yaml` Blueprint: one Python web service (API + frontend)
-and one free Postgres.
+The repo ships a `render.yaml` Blueprint: one Python web service (API +
+frontend), no separate database resource — it uses SQLite on the service's
+own disk. This is a deliberate tradeoff: provisioning a Render database
+(even the free plan) requires a payment method on file for anti-abuse
+verification, a plain web service doesn't. The cost is that Render's free
+web service filesystem is ephemeral — data doesn't reliably survive a
+redeploy or crash restart (ordinary idle spin-down/wake is fine). Good
+enough for a demo/judging session; re-seed if it resets. Swap
+`DATABASE_URL` for a real Postgres URL (Render's own paid plan, or any
+other provider) whenever you want a deployment that keeps its data.
 
 1. Push the repo to GitHub (`.gitignore` already excludes `.env`, `.venv`, `*.db`).
 2. Render dashboard → **New → Blueprint** → select the repo. Render reads
-   `render.yaml`, creates `nagarvaani` and `nagarvaani-db`, and wires
-   `DATABASE_URL` between them.
+   `render.yaml` and creates the `nagarvaani` web service — no card needed
+   for this step, since there's no database to provision.
 3. When prompted, paste the secrets marked `sync: false`:
-   `ANTHROPIC_API_KEY` (required), and optionally the Cloudinary, OpenAI and
-   Telegram values. `JWT_SECRET` and `TELEGRAM_WEBHOOK_SECRET` are generated for you.
+   `GEMINI_API_KEY` (required — the app's active default AI provider), and
+   optionally `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_ID`, and the Cloudinary/
+   OpenAI/Telegram values. `JWT_SECRET` and `TELEGRAM_WEBHOOK_SECRET` are
+   generated for you.
 4. Edit `FRONTEND_URL` in the service's environment to the URL Render assigned
    (e.g. `https://nagarvaani-xyz.onrender.com`) — the app refuses to start in
    production with a wrong/empty value, on purpose.

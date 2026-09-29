@@ -1,6 +1,16 @@
-# Render Blueprint — one web service (API + static frontend) and one Postgres.
+# Render Blueprint — one web service, no database resource.
 # In the Render dashboard: New → Blueprint → point at this repo.
 # Secrets marked sync: false are entered once in the dashboard, never committed.
+#
+# SQLite, not Postgres: provisioning a Render database (even the free plan)
+# requires a payment method on file for anti-abuse verification, which a
+# plain web service alone doesn't. This trades that off against Render's
+# free web service having an ephemeral filesystem — data (accounts,
+# complaints) doesn't reliably survive a redeploy or a crash restart, only
+# ordinary idle spin-down/wake. Fine for a demo/judging session; re-run
+# `python seed_data.py` from the Shell tab if the demo data disappears.
+# Swap DATABASE_URL for a real Postgres URL (Render's own, or any other
+# provider) whenever you're ready for a deployment that keeps its data.
 services:
   - type: web
     name: nagarvaani
@@ -15,9 +25,7 @@ services:
       - key: FRONTEND_URL
         value: https://nagarvaani.onrender.com   # change to your service URL
       - key: DATABASE_URL
-        fromDatabase:
-          name: nagarvaani-db
-          property: connectionString
+        value: sqlite+aiosqlite:///./nagarvaani.db
       - key: JWT_SECRET
         generateValue: true
       # ai_engine.py's active default provider — required for the AI pipeline
@@ -43,7 +51,3 @@ services:
         sync: false
       - key: TELEGRAM_WEBHOOK_SECRET
         generateValue: true
-
-databases:
-  - name: nagarvaani-db
-    plan: free
