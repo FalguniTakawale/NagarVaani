@@ -869,6 +869,8 @@ async def translate_complaint(
 
     text_to_translate = complaint.text_original
     translation = await translate_text(text_to_translate, payload.target_language)
+    if not translation.get("ok"):
+        raise HTTPException(status_code=503, detail="Translation is temporarily unavailable — please try again shortly")
 
     return {
         "original": text_to_translate,

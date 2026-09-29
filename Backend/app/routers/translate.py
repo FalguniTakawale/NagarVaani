@@ -24,6 +24,8 @@ async def translate_any(payload: TranslateAnyRequest, request: Request):
     if len(text) > 4000:
         raise HTTPException(status_code=400, detail="Text too long to translate (max 4000 characters)")
     result = await translate_text(text, payload.target_language or "en")
+    if not result.get("ok"):
+        raise HTTPException(status_code=503, detail="Translation is temporarily unavailable — please try again shortly")
     return {
         "translated": result.get("translated", text),
         "detected_language": result.get("detected_language"),

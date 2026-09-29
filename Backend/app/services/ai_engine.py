@@ -27,7 +27,13 @@ settings = get_settings()
 # _PROVIDER below back to "anthropic" — every call in this file goes through
 # the single _call_llm() helper, so that's the only place to change.
 _PROVIDER = "gemini"
-GEMINI_MODEL = "gemini-3.8-flash"
+# gemini-3.8-flash's free tier is capped at 20 requests/DAY, shared across
+# every AI feature in this file (filter, classify, score-brief, translate,
+# chatbot, place-scan) — verified exhausted twice this session, and each
+# failure was silently masked (see translate_text's old fallback). The
+# -lite tier has a much higher free daily cap and handles these JSON-mode
+# prompts fine (verified directly against this API key).
+GEMINI_MODEL = "gemini-3.1-flash-lite"
 CLAUDE_MODEL = "claude-sonnet-4-6"
 
 _gemini_client = genai.Client(api_key=settings.gemini_api_key) if settings.gemini_api_key else None
@@ -387,9 +393,17 @@ Respond ONLY with valid JSON, no markdown:
     try:
         raw = _call_llm(prompt, max_tokens=500)
         raw = re.sub(r"```(?:json)?|```", "", raw).strip()
-        return json.loads(raw)
-    except Exception:
-        return {"translated": text, "detected_language": "en"}
+        result = json.loads(raw)
+        result["ok"] = True
+        return result
+    except Exception as e:
+        # Echoing the original text back here used to look identical to a
+        # successful "no translation needed" response — the caller (and the
+        # user) had no way to tell "already in that language" apart from
+        # "the LLM call actually failed" (e.g. quota exhausted). ok=False
+        # lets /translate and /complaints/{id}/translate surface a real
+        # error instead of silently pretending the text was translated.
+        return {"translated": text, "detected_language": None, "ok": False, "error": str(e)}
 
 
 # ── HOME-PAGE CHATBOT ──────────────────────────────────────────────────────────
