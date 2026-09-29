@@ -1,6 +1,9 @@
+import hashlib
+import re
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -120,6 +123,30 @@ if FRONTEND_HTML.exists():
     app.mount("/css", StaticFiles(directory=FRONTEND_DIR / "css"), name="css")
     app.mount("/js", StaticFiles(directory=FRONTEND_DIR / "js"), name="js")
 
+    def _asset_version() -> str:
+        """A hash of every js/css file's mtime — changes automatically
+        whenever a file changes (every --reload, every deploy), and gets
+        appended to each asset URL below as ?v=<hash>. This is the actual
+        fix for "I edited the code but the browser still shows the old
+        thing": Cache-Control headers are a *request* to the browser, which
+        some setups still ignore; a different URL isn't a request, the
+        browser has no old response to serve for a URL it's never seen."""
+        parts = []
+        for sub in ("js", "css"):
+            d = FRONTEND_DIR / sub
+            if d.exists():
+                for f in sorted(d.glob("*")):
+                    parts.append(f"{f.name}:{f.stat().st_mtime_ns}")
+        return hashlib.md5("|".join(parts).encode()).hexdigest()[:10]
+
+    _ASSET_VERSION = _asset_version()
+
     @app.get("/", include_in_schema=False)
     async def frontend():
-        return FileResponse(FRONTEND_HTML)
+        html = FRONTEND_HTML.read_text(encoding="utf-8")
+        html = re.sub(
+            r'((?:src|href)=")(js|css)/([^"?]+)(")',
+            rf'\1\2/\3?v={_ASSET_VERSION}\4',
+            html,
+        )
+        return HTMLResponse(html)

@@ -191,6 +191,45 @@ lift a non-critical one above a critical one.
 
 ---
 
+## Near Me: Distance vs Priority sort, and manual location
+
+The Near Me page (`js/nearme.js`) shows complaints within a radius of a point,
+sourced from `GET /api/complaints?scope=nearby` (list) and `GET /api/stats/map`
+(pins). The two sort buttons re-order that same list, nothing else:
+
+- **Distance** — nearest first. Computed client-side with the haversine
+  formula against your current point; shown on each card as "📍 X m/km away".
+- **Priority** — highest AI priority score first (severity/season/population/
+  cross-district pattern — see above), same score used everywhere else in
+  the app, never vote count.
+
+With only one or two complaints inside the current radius, switching sort
+order can look like nothing happened — there's nothing left to reorder. That's
+expected, not a bug (verified directly: a controlled two-complaint test, one
+far-but-severe and one near-but-minor, sorts correctly and differently under
+each mode). Widen the radius or pick a busier area to see it visibly reorder.
+
+**Getting a specific location** (not just GPS): most laptops/desktops resolve
+*some* location via GPS/IP even without a precise fix, which is meaningless
+for testing an India-focused app from outside India. Two ways to search a
+specific state/city/area instead of your device's real location:
+
+- **Near Me** — the **"🔍 Enter a location"** button (always visible, not
+  just when GPS fails) reveals a State dropdown + City combo + free-text
+  area/road field. Submitting geocodes that combination via Nominatim's
+  *structured* query fields (not one ambiguous free-text string) — this is
+  what correctly resolves an ambiguous name like "S.B. Road" (which exists
+  in more than one Indian city) to the city you actually specified, not
+  whichever one a plain-text search ranks highest globally.
+- **Report an issue** — if you're signed in with a city/state already on
+  your account, the form defaults to that (shown as "📍 Using your
+  registered location: ...") instead of asking again. Click **"✏️ Report
+  for a different city/state"** next to it to override — the fields it
+  reveals are pre-filled from your account as a starting point but fully
+  editable, and whatever you submit with wins over the account default.
+
+---
+
 ## API endpoints
 
 All under `/api`. Interactive docs at `/docs` when the server is running.
