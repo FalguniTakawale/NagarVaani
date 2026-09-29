@@ -84,26 +84,50 @@ function onDenied() {
 }
 
 /* GPS denied: geocode the typed place with Nominatim so the same radius flow
-   works; if that fails, fall back to a text filter on the backend. */
+   works; if that fails, fall back to a text filter on the backend.
+
+   City/State matter here because plain free-text search is genuinely
+   ambiguous — "S B Road" (Senapati Bapat Road) exists in several Indian
+   cities, and Nominatim's top-ranked global match for it is Mumbai's, not
+   Pune's, with no way to tell from the area name alone. Passing city/state
+   as Nominatim's own *structured* query fields (not just appended text)
+   scopes the search server-side instead of hoping the free-text ranking
+   guesses right. */
 export async function nearMeManual() {
   const q = document.getElementById('nearme-manual-input').value.trim();
   if (!q) return;
+  const city = document.getElementById('nearme-manual-city').value.trim();
+  const stateName = document.getElementById('nearme-manual-state').value;
   const list = document.getElementById('nearme-feed-list');
   list.innerHTML = loadingPlaceholder();
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&countrycodes=in&format=json&limit=1`);
-    const hits = await res.json();
+    const params = city
+      ? new URLSearchParams({ street: q, city, state: stateName, country: 'India', format: 'json', limit: '1' })
+      : new URLSearchParams({ q, countrycodes: 'in', format: 'json', limit: '1' });
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`);
+    let hits = await res.json();
+    // A street name Nominatim doesn't have indexed for that exact city (common
+    // for smaller lanes) returns nothing structured — retry as free text
+    // scoped by appending city/state, still far better than no scoping at all.
+    if (!hits.length && city) {
+      const fallback = new URLSearchParams({ q: `${q}, ${city}, ${stateName}, India`, countrycodes: 'in', format: 'json', limit: '1' });
+      const res2 = await fetch(`https://nominatim.openstreetmap.org/search?${fallback.toString()}`);
+      hits = await res2.json();
+    }
     if (hits.length) {
       state.place = hits[0].display_name.split(',').slice(0, 2).join(',');
       setPosition(parseFloat(hits[0].lat), parseFloat(hits[0].lon), { keepPlace: true });
       return;
     }
   } catch (_) { /* fall through to text filter */ }
-  // Text filter, no map
+  // Text filter, no map — city (if given) scopes it server-side too, same
+  // reasoning as the structured geocode attempt above.
   try {
-    const items = await api(`/complaints?scope=nearby&near_text=${encodeURIComponent(q)}&sort=priority&per_page=50`);
+    const textParams = new URLSearchParams({ scope: 'nearby', near_text: q, sort: 'priority', per_page: '50' });
+    if (city) textParams.set('city', city);
+    const items = await api(`/complaints?${textParams.toString()}`);
     document.getElementById('nearme-subtitle').textContent = items.length
-      ? `${items.length} · "${q}"` : t('nearme.notfound');
+      ? `${items.length} · "${q}"${city ? ', ' + city : ''}` : t('nearme.notfound');
     list.innerHTML = items.length ? items.map(c => renderComplaintCard(c)).join('') : '';
   } catch (err) {
     list.innerHTML = `<div style="padding:24px;text-align:center;color:var(--critical);font-size:13px;">${escapeHtml(err.message)}</div>`;

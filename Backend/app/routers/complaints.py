@@ -262,6 +262,11 @@ async def list_complaints(
             like = f"%{near_text.strip()}%"
             q = q.where(or_(Complaint.area.ilike(like), Complaint.city.ilike(like),
                             Complaint.location_text.ilike(like), Complaint.ward.ilike(like)))
+            # A free-text area name alone is ambiguous across cities (e.g. a
+            # street name that exists in more than one) — an explicit city
+            # narrows it instead of matching that name anywhere in India.
+            if city:
+                q = q.where(Complaint.city.ilike(f"%{city.strip()}%"))
         elif city:
             q = q.where(Complaint.city == city)
     elif scope == "mine":

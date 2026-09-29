@@ -1213,9 +1213,20 @@
 
     <div class="nearme-manual" id="nearme-manual" hidden>
       <span data-i18n="nearme.denied">Location access was denied.</span>
-      <form onsubmit="event.preventDefault(); nearMeManual();" style="display:flex;gap:6px;flex:1;">
-        <input class="form-input" id="nearme-manual-input" placeholder="Enter your area or pin code" data-i18n-placeholder="nearme.enterarea" style="padding:7px 10px;font-size:13px;" />
-        <button class="nearme-go" type="submit" data-i18n="nearme.go">Go</button>
+      <form onsubmit="event.preventDefault(); nearMeManual();" class="nearme-manual-form">
+        <div class="nearme-manual-row">
+          <select class="form-input" id="nearme-manual-state" onchange="onNearMeManualStateChange(this.value)"></select>
+          <div class="combo-wrap" style="flex:1;">
+            <input class="form-input" id="nearme-manual-city" autocomplete="off" placeholder="City or district" data-i18n-placeholder="nearme.manualcity"
+                   oninput="filterCombo('nearme-manual-city','nearme-manual-city-list')" onfocus="filterCombo('nearme-manual-city','nearme-manual-city-list')"
+                   onkeydown="comboKeydown(event,'nearme-manual-city','nearme-manual-city-list')" />
+            <div class="combo-list" id="nearme-manual-city-list" hidden></div>
+          </div>
+        </div>
+        <div class="nearme-manual-row">
+          <input class="form-input" id="nearme-manual-input" placeholder="Area, road, or landmark (e.g. S.B. Road)" data-i18n-placeholder="nearme.enterarea" style="padding:7px 10px;font-size:13px;flex:1;" />
+          <button class="nearme-go" type="submit" data-i18n="nearme.go">Go</button>
+        </div>
       </form>
     </div>
 
@@ -2179,14 +2190,16 @@ function populateStateSelect(stateSelId, defaultState = "Maharashtra") {
 function updateDistrictList(state, listId, cityInputId, hintId) {
   const list = document.getElementById(listId);
   const city = document.getElementById(cityInputId);
-  const hint = document.getElementById(hintId);
+  const hint = hintId ? document.getElementById(hintId) : null;
   const districts = INDIA_DISTRICTS[state] || [];
   list.dataset.options = JSON.stringify(districts);
   filterCombo(cityInputId, listId);
   city.placeholder = districts.length ? `e.g. ${districts.slice(0, 3).join(', ')}` : 'City or district';
-  hint.textContent = districts.length
-    ? `${districts.length} districts of ${state} listed — pick one or type your own.`
-    : 'Type your city or district.';
+  if (hint) {
+    hint.textContent = districts.length
+      ? `${districts.length} districts of ${state} listed — pick one or type your own.`
+      : 'Type your city or district.';
+  }
   if (city.value && !districts.includes(city.value)) city.value = '';
 }
 
@@ -2251,8 +2264,18 @@ function onSubmitStateChange(state) {
   updateDistrictList(state, 'submit-district-list', 'submit-city', 'submit-district-hint');
 }
 
+function populateNearMeManualStates(defaultState = "Maharashtra") {
+  populateStateSelect('nearme-manual-state', defaultState);
+  onNearMeManualStateChange(defaultState);
+}
+
+function onNearMeManualStateChange(state) {
+  updateDistrictList(state, 'nearme-manual-city-list', 'nearme-manual-city');
+}
+
 populateStates();
 populateSubmitStates();
+populateNearMeManualStates();
 </script>
 
 <script type="module" src="js/main.js"></script>
