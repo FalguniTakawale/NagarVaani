@@ -65,6 +65,14 @@ async def security_headers(request, call_next):
     resp.headers.setdefault("Permissions-Policy", "camera=(), microphone=(self), geolocation=(self)")
     if not IS_DEV:
         resp.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    # This app ships as one HTML file + a handful of small JS/CSS files that
+    # change constantly during development/demo prep — a stale cached copy
+    # of one but not the other (e.g. new HTML with an i18n key the browser's
+    # still-cached js/i18n.js doesn't have yet) produces confusing bugs that
+    # look like a real code issue but are actually just the browser serving
+    # an old file. Not worth the bandwidth savings for files this small.
+    if request.url.path.startswith("/js/") or request.url.path.startswith("/css/") or request.url.path == "/":
+        resp.headers["Cache-Control"] = "no-cache, must-revalidate"
     return resp
 
 
