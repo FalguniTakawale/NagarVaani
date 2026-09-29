@@ -20,7 +20,16 @@ services:
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
+      # ai_engine.py's active default provider — required for the AI pipeline
+      # (filter/classify/score/translate/chatbot) to actually work. Get one
+      # free at aistudio.google.com/apikey.
+      - key: GEMINI_API_KEY
+        sync: false
       - key: ANTHROPIC_API_KEY
+        sync: false
+      # Optional — "Continue with Google" sign-in. Leave blank to skip; the
+      # button just stays hidden. See Backend/.env.example for setup.
+      - key: GOOGLE_CLIENT_ID
         sync: false
       - key: OPENAI_API_KEY
         sync: false
