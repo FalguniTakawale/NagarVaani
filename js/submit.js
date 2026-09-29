@@ -9,6 +9,13 @@ import { t } from './i18n.js';
 let capturedLat = null;
 let capturedLng = null;
 
+// A signed-in account's saved city/state used to fully replace the manual
+// fields with no way back — fine for the common case, but there was no way
+// to file a complaint about a *different* place than your registered one
+// without editing your profile first. This flag lets "Change it" reveal the
+// real dropdowns and have them actually win at submit time.
+let cityStateOverride = false;
+
 export function captureLocation() {
   const label = document.getElementById('loc-btn-label');
   const status = document.getElementById('loc-status');
@@ -151,8 +158,8 @@ export async function submitComplaint() {
   // Use the account's known city/state if it has one; otherwise this
   // complaint has nowhere else to get it from, so the explicit fields are
   // required (updateSubmitAuthNotice() shows/hides them accordingly).
-  const knownCity = authUser && authUser.city;
-  const knownState = authUser && authUser.state;
+  const knownCity = !cityStateOverride && authUser && authUser.city;
+  const knownState = !cityStateOverride && authUser && authUser.state;
   const city = knownCity || document.getElementById('submit-city').value.trim();
   const state = knownState || document.getElementById('submit-state').value.trim();
   if (!knownCity && (!city || !state)) { showToast(t('js.citystatefirst')); return; }
@@ -242,6 +249,7 @@ export function dismissSubmitSuccess() {
    Explains, before submitting, what "anonymous" actually means here and why
    signing in is the alternative — not just what happens after the fact. */
 export function updateSubmitAuthNotice() {
+  cityStateOverride = false; // fresh visit to the page — start from the default again
   const anonNotice = document.getElementById('submit-anon-notice');
   const signedInNotice = document.getElementById('submit-signedin-notice');
   if (authUser) {
@@ -274,4 +282,23 @@ export function updateSubmitAuthNotice() {
     citystateGroup.style.display = 'block';
     citystateKnown.style.display = 'none';
   }
+}
+
+// "Not reporting for your registered location? Change it" — reveals the
+// real State/City fields for a signed-in user and marks the override so
+// submitComplaint() actually uses them instead of silently falling back to
+// the account's saved city/state.
+export function overrideSubmitCityState() {
+  cityStateOverride = true;
+  document.getElementById('submit-citystate-known').style.display = 'none';
+  document.getElementById('submit-citystate-group').style.display = 'block';
+  // window.populateStateSelect/onSubmitStateChange are the plain globals
+  // defined in nagarvaani-full.html's inline script (shared with signup and
+  // Near Me's manual form) — start from the account's own state/city as a
+  // sensible default rather than blank/Maharashtra.
+  const state = (authUser && authUser.state) || 'Maharashtra';
+  document.getElementById('submit-state').value = state;
+  window.onSubmitStateChange(state);
+  if (authUser && authUser.city) document.getElementById('submit-city').value = authUser.city;
+  document.getElementById('submit-city').focus();
 }

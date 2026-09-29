@@ -10,7 +10,7 @@ import { toggleRecording } from './voice.js';
 import { sortToggle, selectCat, voteUp, quickVote, setMyStatusFilter, filterTrendingByArea, clearTrendingAreaFilter, toggleSchemesPanel, toggleNotifMenu, refreshNotifDot, translateCardTitle } from './feed.js';
 import { doVote, doSameIssue, postComment, doTranslate, doDispute, translateComment, shareComplaint, flagComplaint } from './detail.js';
 import {
-  submitComplaint, captureLocation,
+  submitComplaint, captureLocation, overrideSubmitCityState,
   handlePhotoSelect, setPhotoCaption, togglePhoto360, removePhoto,
   copySubmitId, dismissSubmitSuccess,
 } from './submit.js';
@@ -58,7 +58,7 @@ Object.assign(window, {
   toggleChatbotPanel, sendChatbotMessage, askChatbotSuggestion,
   sendVolunteerInterest, sendOrgPartnerInterest,
   doVote, doSameIssue, postComment, doTranslate, doDispute, translateComment, shareComplaint, flagComplaint,
-  submitComplaint, captureLocation,
+  submitComplaint, captureLocation, overrideSubmitCityState,
   handlePhotoSelect, setPhotoCaption, togglePhoto360, removePhoto,
   copySubmitId, dismissSubmitSuccess,
   loadGovtDashboard, endorseComplaint, markInProgress, setGovtScope,
