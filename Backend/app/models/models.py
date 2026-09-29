@@ -286,3 +286,21 @@ class NeighborhoodSubscription(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     unsubscribe_token = Column(String(64), unique=True, nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+# ── CITIZEN REPORT (the "⚑ Flag" button on a complaint) ──
+class ComplaintReport(Base):
+    """A citizen flagging a complaint as spam / fake / abusive / duplicate.
+    Goes to the admin review queue (GET /api/admin/reports) — it does NOT
+    hide the complaint automatically, so it can't be used to silence one.
+    One report per signed-in user or per IP per complaint."""
+    __tablename__ = "complaint_reports"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    complaint_id = Column(String, ForeignKey("complaints.id"), nullable=False, index=True)
+    reporter_id = Column(String, ForeignKey("users.id"), nullable=True)
+    reporter_key = Column(String(80), nullable=False)  # "u:<user id>" or "ip:<addr>" — dedupe key
+    reason = Column(String(30), nullable=False)        # spam | fake | abusive | duplicate | other
+    note = Column(String(500), nullable=True)
+    resolved = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

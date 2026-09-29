@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models.models import OfficialVerificationStatus, User, UserRole
+from app.models.models import ComplaintReport, Complaint, OfficialVerificationStatus, User, UserRole
 from app.schemas.schemas import ApproveOfficialOut, PendingOfficialOut, RejectOfficialRequest
 from app.services.auth import generate_temp_password, hash_password, require_admin
 from app.services.email import send_official_approved_email, send_official_rejected_email
@@ -77,3 +77,25 @@ async def reject_official(user_id: str, payload: RejectOfficialRequest, db: Asyn
     await db.flush()
     emailed = await send_official_rejected_email(user.requested_email or user.email, user.name, payload.reason)
     return {"message": "Rejected", "emailed": emailed}
+
+
+@router.get("/reports")
+async def list_reports(db: AsyncSession = Depends(get_db), admin: User = Depends(require_admin)):
+    """Moderation queue: complaints flagged by citizens via the ⚑ Flag button."""
+    rows = (await db.execute(
+        select(ComplaintReport, Complaint).join(Complaint, Complaint.id == ComplaintReport.complaint_id)
+        .where(ComplaintReport.resolved == False).order_by(ComplaintReport.created_at.desc()).limit(200)  # noqa: E712
+    )).all()
+    return [{"id": r.id, "complaint_id": c.id, "title": (c.text_translated or c.text_original)[:120],
+             "reason": r.reason, "note": r.note, "created_at": r.created_at.isoformat() if r.created_at else None}
+            for r, c in rows]
+
+
+@router.post("/reports/{report_id}/resolve")
+async def resolve_report(report_id: str, db: AsyncSession = Depends(get_db), admin: User = Depends(require_admin)):
+    r = (await db.execute(select(ComplaintReport).where(ComplaintReport.id == report_id))).scalar_one_or_none()
+    if not r:
+        raise HTTPException(status_code=404, detail="Report not found")
+    r.resolved = True
+    await db.flush()
+    return {"message": "Report closed"}

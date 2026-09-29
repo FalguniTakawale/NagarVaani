@@ -2,7 +2,7 @@
 
 A civic-intelligence layer between citizens and government. Citizens report
 infrastructure problems in any language — by web form, voice note, or Telegram.
-Claude scores every complaint on **severity, season, population density and
+An LLM (Gemini by default, Claude optional) scores every complaint on **severity, season, population density and
 cross-district patterns — not vote count** — so a village of fifty gets heard on
 merit. Officials get AI-synthesised briefs, a live hotspot map, and a queue
 sorted by what actually matters.
@@ -12,6 +12,11 @@ sorted by what actually matters.
 
 Built for **Build with AI: Code for Communities** (H2S) — Track 1, AI for Digital
 Public Infrastructure & Governance.
+
+**Read next:** [docs/PROJECT_REPORT.md](docs/PROJECT_REPORT.md) (also as
+[PDF](docs/NagarVaani_Project_Report.pdf)) — what the app does, what the ⚑ Flag
+does, what L1–L5 mean, an honest real-vs-demo-vs-stub audit, GDG challenge fit,
+and the security review.
 
 Licensed under [MIT](LICENSE) — see [PRIVACY.md](PRIVACY.md) for what data the
 platform actually collects and where it goes.
@@ -59,7 +64,7 @@ directory for India.
 git clone <repo>
 cd Backend
 cp .env.example .env
-# Fill in ANTHROPIC_API_KEY (required), others optional for local dev
+# Fill in GEMINI_API_KEY (default provider) or ANTHROPIC_API_KEY, others optional for local dev
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python setup_db.py
@@ -166,6 +171,9 @@ All under `/api`. Interactive docs at `/docs` when the server is running.
 | `GET` | `/complaints/flagged` | official | Complaints carrying an `[OFFICIAL FLAG]` comment — the Investment Flags list |
 | `GET` | `/stats/ward?ward=` | — | open / critical / in-progress / resolved counts |
 | `GET` | `/stats/jurisdiction` | official | Tiles + badge counts scoped to the official's own ward / city / state |
+| `POST` | `/complaints/{id}/report` | optional | ⚑ Flag — queue a complaint for moderator review (never auto-hides) |
+| `GET` | `/admin/reports` | admin | Moderation queue of flagged complaints |
+| `GET` | `/stats/priorities` | official | Ranked (state × problem) demand with Census-2011 population + suggested central scheme |
 | `GET` | `/stats/nationwide` | — | Totals + per-state hotspot rollup |
 | `GET` | `/stats/map` | — | `{lat,lng,score,category,label}` points for Leaflet. `scope=national\|ward\|city\|state` |
 | `POST` | `/stt` | — | multipart `audio` → Whisper transcript |

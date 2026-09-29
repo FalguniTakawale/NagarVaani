@@ -95,7 +95,7 @@ export async function doTranslate() {
       method: 'POST', body: JSON.stringify({ target_language: target }),
     });
     complaintTranslation = { id: currentComplaintId, target, translated: result.translated, from: result.detected_language };
-    document.getElementById('translate-from').textContent = t('detail.translatedfrom', { lang: langName(result.detected_language) });
+    document.getElementById('translate-from').textContent = t('detail.translatedfrom', { lang: langName(result.detected_language) }) + (result.romanized ? ' (written in English letters)' : '');
     document.getElementById('translate-translated').textContent = result.translated;
     box.hidden = false;
     btn.textContent = t('detail.hidetranslation');
@@ -234,11 +234,13 @@ export async function loadComplaintDetail(id) {
     // Whole section (header included) disappears when there are no images.
     document.getElementById('gallery-section').style.display = images.length ? 'block' : 'none';
     gallery.innerHTML = images.map(img => {
-      const url = escapeHtml(img.url || '');
+      // Only http(s) URLs; opened via a data attribute (not inline JS) so a quote in the URL can't break out.
+      const rawUrl = /^https?:\/\//i.test(img.url || '') ? img.url : '';
+      const url = escapeHtml(rawUrl);
       const alt = escapeHtml(img.caption || 'Complaint photo');
       return `
       <div class="gallery-item">
-        <div class="gallery-thumb" onclick="window.open('${url}','_blank')">
+        <div class="gallery-thumb" data-url="${url}" onclick="window.open(this.dataset.url,'_blank','noopener,noreferrer')">
           <img src="${url}" loading="lazy" alt="${alt}" style="width:100%;height:100%;object-fit:cover;"
                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
           <div style="display:none;width:100%;height:100%;align-items:center;justify-content:center;flex-direction:column;gap:4px;font-size:12px;color:var(--slate);">📷<span>Image unavailable</span></div>
@@ -326,4 +328,68 @@ async function loadRelatedComplaints(id) {
   } catch (err) {
     section.style.display = 'none';
   }
+}
+
+
+/* ── SHARE ── */
+function closeModal() { const m = document.getElementById('nv-modal-back'); if (m) m.remove(); }
+function openModal(html) {
+  closeModal();
+  const back = document.createElement('div');
+  back.className = 'nv-modal-back'; back.id = 'nv-modal-back';
+  back.innerHTML = `<div class="nv-modal" role="dialog" aria-modal="true">${html}</div>`;
+  back.addEventListener('click', (e) => { if (e.target === back) closeModal(); });
+  document.body.appendChild(back);
+}
+window.closeNvModal = closeModal;
+
+export async function shareComplaint() {
+  if (!currentComplaintId) return;
+  const url = `${location.origin}${location.pathname}#detail/${encodeURIComponent(currentComplaintId)}`;
+  const title = (document.getElementById('detail-title').textContent || 'Civic issue').slice(0, 120);
+  const text = `NagarVaani — ${title}`;
+  // Native share sheet on phones (WhatsApp, Messages, etc. appear automatically).
+  if (navigator.share) {
+    try { await navigator.share({ title: 'NagarVaani', text, url }); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  const e = encodeURIComponent;
+  openModal(`<h3>Share this issue</h3><div class="sub">${escapeHtml(url)}</div>
+    <div class="nv-share-grid">
+      <a target="_blank" rel="noopener noreferrer" href="https://wa.me/?text=${e(text + ' ' + url)}">WhatsApp</a>
+      <a target="_blank" rel="noopener noreferrer" href="https://t.me/share/url?url=${e(url)}&text=${e(text)}">Telegram</a>
+      <a target="_blank" rel="noopener noreferrer" href="https://twitter.com/intent/tweet?text=${e(text)}&url=${e(url)}">X / Twitter</a>
+      <a target="_blank" rel="noopener noreferrer" href="https://www.facebook.com/sharer/sharer.php?u=${e(url)}">Facebook</a>
+      <a href="mailto:?subject=${e(text)}&body=${e(url)}">Email</a>
+      <button type="button" id="nv-copy-link">Copy link</button>
+    </div>
+    <button class="nv-btn" onclick="closeNvModal()">Close</button>`);
+  document.getElementById('nv-copy-link').onclick = async () => {
+    try { await navigator.clipboard.writeText(url); showToast('Link copied'); closeModal(); }
+    catch { prompt('Copy this link:', url); }
+  };
+}
+
+/* ── FLAG (citizen report → admin moderation queue) ── */
+export function flagComplaint() {
+  if (!currentComplaintId) return;
+  openModal(`<h3>Flag this complaint</h3><div class="sub">Sends it to a moderator for review. It stays visible until reviewed.</div>
+    <select id="flag-reason">
+      <option value="spam">Spam / advertisement</option>
+      <option value="fake">Fake or false report</option>
+      <option value="abusive">Abusive or hateful</option>
+      <option value="duplicate">Duplicate of another complaint</option>
+      <option value="other">Something else</option>
+    </select>
+    <textarea id="flag-note" rows="2" maxlength="500" placeholder="Optional details"></textarea>
+    <div class="nv-share-grid"><button class="nv-btn" onclick="closeNvModal()">Cancel</button><button class="nv-btn primary" id="flag-submit">Submit flag</button></div>`);
+  document.getElementById('flag-submit').onclick = async () => {
+    try {
+      const r = await api(`/complaints/${currentComplaintId}/report`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: document.getElementById('flag-reason').value, note: document.getElementById('flag-note').value }),
+      });
+      closeModal(); showToast(r.message);
+    } catch (err) { showToast(err.message); }
+  };
 }

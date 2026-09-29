@@ -22,7 +22,7 @@ const pageDisplay = {
   home: 'flex', nearme: 'flex', mycomplaints: 'flex', myvotes: 'flex',
   detail: 'block', submit: 'block', govt: 'block', login: 'block', corruption: 'block',
   landing: 'block', about: 'block', track: 'block', forofficials: 'block',
-  govtschemes: 'block', trending: 'block', impact: 'block', orgsupport: 'block',
+  govtschemes: 'block', trending: 'block', impact: 'block', orgsupport: 'block', levels: 'block',
 };
 
 export let currentComplaintId = null;
@@ -92,15 +92,16 @@ export function nav(page, opts = {}) {
 
   if (!fromPopstate) {
     const state = { page, id: page === 'detail' ? currentComplaintId : undefined };
+    const hash = page === 'detail' && currentComplaintId ? '#detail/' + encodeURIComponent(currentComplaintId) : '#' + page;
     // The very first nav() call is the initial render, not a user action —
     // replace that entry instead of pushing, so one "back" press from the
     // first page a visitor sees behaves like leaving the site (correct),
     // rather than landing on a phantom duplicate of the same page.
     if (!historyStarted) {
       historyStarted = true;
-      history.replaceState(state, '', '#' + page);
+      history.replaceState(state, '', hash);
     } else {
-      history.pushState(state, '', '#' + page);
+      history.pushState(state, '', hash);
     }
   }
 }

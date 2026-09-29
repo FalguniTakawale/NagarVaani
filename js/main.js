@@ -8,7 +8,7 @@ import { applyLanguage, setLanguage, toggleLangMenu, t } from './i18n.js';
 import { nav, openComplaint, topbarSearch, trackComplaintById } from './nav.js';
 import { toggleRecording } from './voice.js';
 import { sortToggle, selectCat, voteUp, quickVote, setMyStatusFilter, filterTrendingByArea, clearTrendingAreaFilter, toggleSchemesPanel, toggleNotifMenu, refreshNotifDot, translateCardTitle } from './feed.js';
-import { doVote, doSameIssue, postComment, doTranslate, doDispute, translateComment } from './detail.js';
+import { doVote, doSameIssue, postComment, doTranslate, doDispute, translateComment, shareComplaint, flagComplaint } from './detail.js';
 import {
   submitComplaint, captureLocation,
   handlePhotoSelect, setPhotoCaption, togglePhoto360, removePhoto,
@@ -57,7 +57,7 @@ Object.assign(window, {
   toggleNotifMenu, translateCardTitle,
   toggleChatbotPanel, sendChatbotMessage, askChatbotSuggestion,
   sendVolunteerInterest, sendOrgPartnerInterest,
-  doVote, doSameIssue, postComment, doTranslate, doDispute, translateComment,
+  doVote, doSameIssue, postComment, doTranslate, doDispute, translateComment, shareComplaint, flagComplaint,
   submitComplaint, captureLocation,
   handlePhotoSelect, setPhotoCaption, togglePhoto360, removePhoto,
   copySubmitId, dismissSubmitSuccess,
@@ -89,10 +89,16 @@ if (!document.body.classList.contains('official-mode')) {
   // Falls back to the landing page only for a genuinely first-ever visit
   // (or the state predates this history.state field entirely).
   const restoreState = history.state;
-  if (restoreState && restoreState.page === 'detail' && restoreState.id) {
+  const hashMatch = /^#detail\/(.+)$/.exec(location.hash || '');
+  if (hashMatch) {
+    // Shared deep link (#detail/<id>) — open that complaint directly.
+    openComplaint(decodeURIComponent(hashMatch[1]));
+  } else if (restoreState && restoreState.page === 'detail' && restoreState.id) {
     openComplaint(restoreState.id);
   } else if (restoreState && restoreState.page) {
     nav(restoreState.page);
+  } else if (/^#(levels|about|track|trending|forofficials|impact|orgsupport|govtschemes)$/.test(location.hash || '')) {
+    nav(location.hash.slice(1));
   } else {
     nav('landing');
   }

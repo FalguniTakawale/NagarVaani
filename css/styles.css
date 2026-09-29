@@ -1151,3 +1151,19 @@ body.official-mode .page { display: none !important; }
   .event-photo { flex: 0 0 auto; height: 140px; order: -1; }
   .event-date-badge { flex-direction: row; gap: 8px; padding: 12px; }
 }
+
+/* ── L1–L5 explainer page ── */
+.lvl-list { display:flex; flex-direction:column; gap:10px; }
+.lvl-card { display:flex; gap:12px; align-items:flex-start; background:#fff; border:1px solid var(--border); border-radius:10px; padding:12px 14px; }
+.lvl-card p { margin:3px 0 0; font-size:13px; line-height:1.6; color:var(--slate); }
+.lvl-card .breakdown-level { flex:none; margin-top:2px; }
+/* ── modal (share / flag) ── */
+.nv-modal-back { position:fixed; inset:0; background:rgba(15,23,42,.5); z-index:9999; display:flex; align-items:center; justify-content:center; padding:16px; }
+.nv-modal { background:#fff; border-radius:14px; padding:20px; width:100%; max-width:380px; box-shadow:0 20px 50px rgba(0,0,0,.25); }
+.nv-modal h3 { margin:0 0 4px; font-size:17px; }
+.nv-modal .sub { font-size:12px; color:var(--slate); margin-bottom:12px; word-break:break-all; }
+.nv-share-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:10px; }
+.nv-share-grid a, .nv-share-grid button, .nv-modal .nv-btn { display:block; text-align:center; padding:10px; border:1px solid var(--border); border-radius:8px; background:#fff; font-size:13px; font-weight:600; color:var(--text); text-decoration:none; cursor:pointer; font-family:inherit; }
+.nv-share-grid a:hover, .nv-share-grid button:hover { background:var(--bg, #f3f4f6); }
+.nv-modal select, .nv-modal textarea { width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:13px; margin-bottom:10px; }
+.nv-modal .nv-btn.primary { background:var(--navy); color:#fff; border-color:var(--navy); }

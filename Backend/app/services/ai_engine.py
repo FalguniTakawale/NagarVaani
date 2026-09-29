@@ -369,14 +369,19 @@ async def translate_text(text: str, target_language: str = "en") -> dict:
     Returns: {translated, detected_language}
     """
     prompt = f"""Translate the following text to {target_language}.
-If it's already in {target_language}, return it unchanged.
+
+IMPORTANT: the text may be a South Asian language written in Latin/English letters
+("romanized" or "Hinglish" — e.g. "Naali bhar gayi hai, paani ghar mein ghus raha hai"
+is HINDI, not English). Detect the real underlying language, NOT the script. Only return
+the text unchanged if its underlying language is already {target_language}.
 
 Text: "{text}"
 
 Respond ONLY with valid JSON, no markdown:
 {{
   "translated": "translation here",
-  "detected_language": "ISO 639-1 code of source language"
+  "detected_language": "ISO 639-1 code of the underlying language (e.g. hi for romanized Hindi)",
+  "romanized": true or false
 }}"""
 
     try:

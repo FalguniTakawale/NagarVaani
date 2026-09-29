@@ -115,6 +115,10 @@
   </div>
   <div class="nav-divider"></div>
   <div class="nav-section-label" data-i18n="nav.info">Info</div>
+  <div class="nav-item" id="nav-levels" onclick="nav('levels')">
+    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="4" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="20" y1="20" x2="20" y2="14"/></svg>
+    <span>How scoring works</span>
+  </div>
   <div class="nav-item" onclick="nav('about')">
     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     <span data-i18n="nav.about">About</span>
@@ -307,12 +311,43 @@
     <div>NagarVaani — नगरवाणी · Your Voice, Your City</div>
     <div class="landing-footer-links">
       <span onclick="nav('about')" data-i18n="nav.about">About</span>
+      <span onclick="nav('levels')">How scoring works (L1–L5)</span>
       <span onclick="nav('track')" data-i18n="track.footerlink">Track a complaint</span>
       <span onclick="nav('forofficials')" data-i18n="land.footer.officials">For officials</span>
       <span onclick="nav('orgsupport')" data-i18n="land.footer.getinvolved">Get involved</span>
       <span onclick="nav('impact')" data-i18n="land.footer.impact">Our impact</span>
       <span onclick="nav('login')" data-i18n="top.signin">Sign in</span>
     </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE: HOW SCORING WORKS (L1–L5)
+═══════════════════════════════════════════ -->
+<div class="page" id="page-levels" style="padding-top:52px;">
+  <div class="section" style="max-width:760px;">
+    <div class="section-head" style="text-align:left;">
+      <div class="section-title" style="font-size:28px;">What do L1 – L5 mean?</div>
+      <div class="section-sub">How NagarVaani decides which problem gets attention first</div>
+    </div>
+    <p style="font-size:14px;line-height:1.7;color:var(--text-soft);margin-bottom:16px;">
+      Every complaint gets a <b>priority score out of 100</b>. It is built from layers (L1–L5) so that the
+      most dangerous problems rise to the top — <b>not</b> the ones that simply collect the most votes.
+      Votes are a gentle final nudge only.
+    </p>
+    <div class="lvl-list">
+      <div class="lvl-card"><span class="breakdown-level lv1">L1</span><div><b>Immediate safety risk</b><p>Is someone likely to get hurt or sick soon? Open manholes, exposed wires, flooded homes, fallen trees. The biggest single boost.</p></div></div>
+      <div class="lvl-card"><span class="breakdown-level lv2">L2</span><div><b>Season amplifier</b><p>The same problem is worse at the wrong time — a blocked drain in monsoon is far more urgent than in winter. This multiplies the severity.</p></div></div>
+      <div class="lvl-card"><span class="breakdown-level lv3">L3</span><div><b>Type of problem</b><p>A base weight per category (drainage, water supply, electricity, road, garbage, trees). Life-critical services weigh more than cosmetic ones.</p></div></div>
+      <div class="lvl-card"><span class="breakdown-level lv3">L4</span><div><b>People affected</b><p>Denser areas affect more people, so the same fault scores higher in a crowded ward than in a sparse one.</p></div></div>
+      <div class="lvl-card"><span class="breakdown-level lv5">L5</span><div><b>Cross-district pattern</b><p>If similar complaints show up across several areas or districts, it points to a systemic infrastructure gap, and gets a bonus.</p></div></div>
+      <div class="lvl-card"><span class="breakdown-level lv6">Votes</span><div><b>Community votes (weakest)</b><p>Applied last as a small multiplier. It can never flip a severity-based ranking — a 3-vote flooded drain can beat a 100-vote pothole.</p></div></div>
+    </div>
+    <p style="font-size:13px;line-height:1.7;color:var(--slate);margin:16px 0;">
+      <b>Score colours:</b> 80+ critical (red) · 55–79 needs attention (amber) · below 55 routine (green).
+      Open any complaint to see its own breakdown: “Why this scores N”.
+    </p>
+    <button class="action-btn primary" onclick="nav('trending')">See top issues →</button>
   </div>
 </div>
 
@@ -1400,8 +1435,8 @@
       <div class="action-bar">
         <button class="action-btn primary" id="vote-btn" onclick="doVote()">▲ <span class="vote-count-big" id="vote-num">3</span> votes</button>
         <button class="action-btn saffron-btn" onclick="doSameIssue()" data-i18n="detail.sameissue">📍 Same issue in my area</button>
-        <button class="action-btn outline" onclick="showToast('Link copied')" data-i18n="detail.share">🔗 Share</button>
-        <button class="action-btn outline" onclick="showToast('Flagged for review')" data-i18n="detail.flag">⚑ Flag</button>
+        <button class="action-btn outline" onclick="shareComplaint()" data-i18n="detail.share">🔗 Share</button>
+        <button class="action-btn outline" onclick="flagComplaint()" data-i18n="detail.flag">⚑ Flag</button>
       </div>
     </div>
 

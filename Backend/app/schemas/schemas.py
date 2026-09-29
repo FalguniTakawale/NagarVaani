@@ -1,20 +1,27 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.models.models import ComplaintCategory, ComplaintStatus, OfficialLevel, OfficialVerificationStatus, UserRole
 
 
 # ── COMPLAINTS ────────────────────────────────────────────────────────────────
 class ImageIn(BaseModel):
-    url: str
-    caption: Optional[str] = None
+    url: str = Field(..., max_length=2048)
+    caption: Optional[str] = Field(None, max_length=300)
     is_360: bool = False
+
+    @field_validator("url")
+    @classmethod
+    def _http_only(cls, v: str) -> str:
+        if not v.lower().startswith(("http://", "https://")):
+            raise ValueError("Image URL must be http(s)")
+        return v
 
 
 class ComplaintCreate(BaseModel):
-    text: str
+    text: str = Field(..., min_length=3, max_length=5000)
     # Normally the classifier decides the category. The corruption page pins it
     # so a bribery report can't be filed under "other" by a hesitant model.
     category: Optional[ComplaintCategory] = None
@@ -26,7 +33,7 @@ class ComplaintCreate(BaseModel):
     state: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    images: Optional[List[ImageIn]] = None
+    images: Optional[List[ImageIn]] = Field(None, max_length=10)
 
 
 class ComplaintListItem(BaseModel):

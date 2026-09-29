@@ -270,3 +270,63 @@ async def map_points(
         }
         for c in complaints
     ]
+
+
+# ── DATA-DRIVEN PROJECT PRIORITIES ────────────────────────────────────────────
+# Real, public inputs only: Census of India 2011 state populations (millions)
+# and the real central schemes that fund each problem type. No invented costs.
+CENSUS_2011_MILLIONS = {
+    "Uttar Pradesh": 199.8, "Maharashtra": 112.4, "Bihar": 104.1, "West Bengal": 91.3,
+    "Madhya Pradesh": 72.6, "Tamil Nadu": 72.1, "Rajasthan": 68.5, "Karnataka": 61.1,
+    "Gujarat": 60.4, "Andhra Pradesh": 49.6, "Odisha": 42.0, "Telangana": 35.0,
+    "Kerala": 33.4, "Jharkhand": 33.0, "Assam": 31.2, "Punjab": 27.7,
+    "Chhattisgarh": 25.5, "Haryana": 25.4, "Delhi": 16.8, "Uttarakhand": 10.1,
+    "Himachal Pradesh": 6.9, "Goa": 1.46,
+}
+SCHEME_FOR_CATEGORY = {
+    "drainage": "AMRUT 2.0 (urban drainage & water)",
+    "water_supply": "Jal Jeevan Mission / AMRUT 2.0",
+    "garbage": "Swachh Bharat Mission (Urban)",
+    "electricity": "Saubhagya / state DISCOM upgrade",
+    "road": "PMGSY (rural) / Smart Cities Mission (urban)",
+    "tree_hazard": "Municipal horticulture / disaster-management budget",
+    "corruption": "Vigilance referral (not an investment item)",
+    "other": "Ward-level budget",
+}
+
+
+@router.get("/priorities")
+async def project_priorities(
+    limit: int = Query(15, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+    official: User = Depends(require_official),
+):
+    """Ranks (state, problem-type) pairs by unresolved complaint demand, joins
+    Census-2011 population for a per-million demand rate, and maps each to the
+    real central scheme that would fund it. priority_index is transparent:
+    avg severity score × (1 + ln(open complaints)). It is a *triage aid* for
+    planners, not a costed project plan."""
+    import math
+    rows = (await db.execute(
+        select(Complaint.state, Complaint.category, func.count(Complaint.id),
+               func.avg(Complaint.priority_score), func.sum(Complaint.linked_area_count))
+        .where(Complaint.is_ai_filtered == True, Complaint.state.isnot(None),  # noqa: E712
+               Complaint.status.in_([ComplaintStatus.open, ComplaintStatus.disputed, ComplaintStatus.in_progress]))
+        .group_by(Complaint.state, Complaint.category)
+    )).all()
+    out = []
+    for state, cat, n, avg, linked in rows:
+        cat_key = cat.value if hasattr(cat, "value") else str(cat)
+        pop = CENSUS_2011_MILLIONS.get(state)
+        avg = float(avg or 0)
+        out.append({
+            "state": state, "category": cat_key, "open_complaints": n,
+            "avg_severity": round(avg, 1),
+            "population_millions_2011": pop,
+            "complaints_per_million": round(n / pop, 3) if pop else None,
+            "priority_index": round(avg * (1 + math.log(n)), 1),
+            "suggested_funding_scheme": SCHEME_FOR_CATEGORY.get(cat_key, "Ward-level budget"),
+        })
+    out.sort(key=lambda r: r["priority_index"], reverse=True)
+    return {"method": "avg severity × (1 + ln(open complaints)); population = Census 2011",
+            "items": out[:limit]}

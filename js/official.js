@@ -364,7 +364,12 @@ export async function loadInvestmentFlags() {
     <div class="off-table flags">
       <div class="off-thead"><div>Complaint</div><div>Score</div><div>Recommended cost</div><div>Flagged by</div><div>Date</div></div>
       <div id="off-rows">${loadingPlaceholder()}</div>
+    </div>
+    <div style="margin-top:28px">
+      ${sectionHeader('Data-driven project priorities', 'Unresolved demand by state and problem type, joined with Census-2011 population and mapped to the real central scheme that funds it. A triage aid — not a costed plan.')}
+      <div id="off-priorities">${loadingPlaceholder()}</div>
     </div>`;
+  loadProjectPriorities();
   try {
     const items = await api('/complaints/flagged');
     const rows = document.getElementById('off-rows');
@@ -385,6 +390,23 @@ export async function loadInvestmentFlags() {
     }).join('');
   } catch (err) {
     document.getElementById('off-rows').innerHTML = `<div class="off-empty" style="color:#DC2626">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+async function loadProjectPriorities() {
+  const box = document.getElementById('off-priorities');
+  try {
+    const { items, method } = await api('/stats/priorities');
+    if (!items.length) { box.innerHTML = `<div class="off-empty">No unresolved complaints with a state yet.</div>`; return; }
+    box.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <thead><tr style="text-align:left;color:#64748B"><th>State</th><th>Problem</th><th>Open</th><th>Avg severity</th><th>Per million people</th><th>Index</th><th>Suggested funding scheme</th></tr></thead>
+      <tbody>${items.map(r => `<tr style="border-top:1px solid #E2E8F0">
+        <td>${escapeHtml(r.state)}</td><td>${escapeHtml(r.category.replace('_', ' '))}</td><td>${r.open_complaints}</td>
+        <td>${r.avg_severity}</td><td>${r.complaints_per_million ?? '—'}</td><td><b>${r.priority_index}</b></td>
+        <td>${escapeHtml(r.suggested_funding_scheme)}</td></tr>`).join('')}</tbody></table></div>
+      <div style="font-size:11px;color:#94A3B8;margin-top:6px">Method: ${escapeHtml(method)}</div>`;
+  } catch (err) {
+    box.innerHTML = `<div class="off-empty" style="color:#DC2626">${escapeHtml(err.message)}</div>`;
   }
 }
 

@@ -5,9 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, asc, or_, false
 from sqlalchemy.orm import selectinload
 from typing import Optional, List
+from pydantic import BaseModel, Field
 from app.database import get_db
 from app.models.models import (
-    Complaint, Vote, Comment, LinkedArea, StatusLog,
+    Complaint, Vote, Comment, LinkedArea, StatusLog, ComplaintReport,
     ComplaintStatus, ComplaintCategory, User, OfficialLevel
 )
 from app.schemas.schemas import (
@@ -856,8 +857,11 @@ async def dispute_complaint(
 async def translate_complaint(
     complaint_id: str,
     payload: TranslateRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ):
+    if not check_rate_limit("translate", client_ip(request), 30, 60 * 10):
+        raise HTTPException(status_code=429, detail="Too many translations — slow down a little")
     result = await db.execute(select(Complaint).where(Complaint.id == complaint_id))
     complaint = result.scalar_one_or_none()
     if not complaint:
@@ -870,5 +874,45 @@ async def translate_complaint(
         "original": text_to_translate,
         "translated": translation.get("translated"),
         "detected_language": translation.get("detected_language"),
+        "romanized": bool(translation.get("romanized")),
         "target_language": payload.target_language,
     }
+
+
+
+# ── CITIZEN FLAG / REPORT ─────────────────────────────────────────────────────
+REPORT_REASONS = {"spam", "fake", "abusive", "duplicate", "other"}
+
+
+class ReportCreate(BaseModel):
+    reason: str = Field(..., max_length=30)
+    note: Optional[str] = Field(None, max_length=500)
+
+
+@router.post("/{complaint_id}/report")
+async def report_complaint(
+    complaint_id: str,
+    payload: ReportCreate,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: Optional[User] = Depends(get_current_user),
+):
+    """The ⚑ Flag button. Queues the complaint for admin moderation review;
+    never hides or alters the complaint by itself."""
+    if payload.reason not in REPORT_REASONS:
+        raise HTTPException(status_code=400, detail="Choose a valid reason")
+    ip = client_ip(request)
+    if not check_rate_limit("report", ip, 10, 60 * 60):
+        raise HTTPException(status_code=429, detail="Too many reports — try again later")
+    exists = (await db.execute(select(Complaint.id).where(Complaint.id == complaint_id))).scalar_one_or_none()
+    if not exists:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    key = f"u:{user.id}" if user else f"ip:{ip}"
+    dup = (await db.execute(select(ComplaintReport.id).where(
+        ComplaintReport.complaint_id == complaint_id, ComplaintReport.reporter_key == key))).first()
+    if dup:
+        return {"message": "You already flagged this — our moderators will review it."}
+    db.add(ComplaintReport(complaint_id=complaint_id, reporter_id=user.id if user else None,
+                           reporter_key=key, reason=payload.reason, note=(payload.note or "").strip() or None))
+    await db.flush()
+    return {"message": "Thanks — flagged for moderator review. The complaint stays visible until reviewed."}
