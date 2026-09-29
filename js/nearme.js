@@ -45,6 +45,22 @@ export function refreshNearMe() {
   locate(true);
 }
 
+// The manual location form used to appear ONLY when GPS genuinely failed —
+// but most laptops/desktops resolve *some* location via GPS/IP even without
+// a precise fix, so if geolocation succeeds (returning wherever the device
+// actually is, which is meaningless for testing an India-focused app from
+// outside India), the form never showed and there was no other way to pick
+// a specific city to test with. This always reveals it on demand instead of
+// toggling — a toggle read ambiguously once GPS had already auto-shown it.
+export function showNearMeManual() {
+  document.getElementById('nearme-manual').hidden = false;
+  setTimeout(() => document.getElementById('nearme-manual-input').focus(), 50);
+}
+
+export function hideNearMeManual() {
+  document.getElementById('nearme-manual').hidden = true;
+}
+
 // Real-time reactivity: a complaint resolved by an official while this page
 // is open should disappear from the map/list without the user reloading.
 // /stats/map already excludes resolved by default — polling just re-asks it

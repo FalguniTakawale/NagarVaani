@@ -1206,13 +1206,17 @@
         <div class="feed-subtitle" id="nearme-subtitle" data-i18n="nearme.locating">Finding your location…</div>
       </div>
       <button class="nearme-tutorial-btn" onclick="showNearMeTutorial()" title="How to use this map">❓</button>
+      <button class="nearme-refresh" onclick="showNearMeManual()" data-i18n="nearme.pickmanual">🔍 Enter a location</button>
       <button class="nearme-refresh" onclick="refreshNearMe()" data-i18n="nearme.refresh">📍 Refresh location</button>
     </div>
 
     <div class="nearme-weekly-resolved" id="nearme-weekly-resolved"></div>
 
     <div class="nearme-manual" id="nearme-manual" hidden>
-      <span data-i18n="nearme.denied">Location access was denied.</span>
+      <div class="nearme-manual-head">
+        <span data-i18n="nearme.pickmanual.label">Search a specific state, city, and area:</span>
+        <button type="button" class="nearme-manual-close" onclick="hideNearMeManual()" title="Close">✕</button>
+      </div>
       <form onsubmit="event.preventDefault(); nearMeManual();" class="nearme-manual-form">
         <div class="nearme-manual-row">
           <select class="form-input" id="nearme-manual-state" onchange="onNearMeManualStateChange(this.value)"></select>

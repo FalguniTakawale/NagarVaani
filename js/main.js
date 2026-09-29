@@ -17,7 +17,7 @@ import {
 import { loadGovtDashboard, endorseComplaint, markInProgress, setGovtScope } from './govt.js';
 import {
   refreshNearMe, nearMeManual, setNearMeRadius, setNearMeSort, toggleHeatmap, subscribeNeighborhood,
-  showNearMeTutorial, closeNearMeTutorial, nearMeTutorialNext, nearMeTutorialStep,
+  showNearMeTutorial, closeNearMeTutorial, nearMeTutorialNext, nearMeTutorialStep, showNearMeManual, hideNearMeManual,
 } from './nearme.js';
 import { submitCorruption } from './corruption.js';
 import { sendVolunteerInterest, sendOrgPartnerInterest } from './getinvolved.js';
@@ -63,7 +63,7 @@ Object.assign(window, {
   copySubmitId, dismissSubmitSuccess,
   loadGovtDashboard, endorseComplaint, markInProgress, setGovtScope,
   refreshNearMe, nearMeManual, setNearMeRadius, setNearMeSort, toggleHeatmap, subscribeNeighborhood,
-  showNearMeTutorial, closeNearMeTutorial, nearMeTutorialNext, nearMeTutorialStep,
+  showNearMeTutorial, closeNearMeTutorial, nearMeTutorialNext, nearMeTutorialStep, showNearMeManual, hideNearMeManual,
   submitCorruption,
   switchToOfficialMode, switchToCitizenMode, offLogout, offOpenDetail, setOfficialView,
   loadOfficialQueue, expandQueueRow, officialAction, postOfficialResponse,

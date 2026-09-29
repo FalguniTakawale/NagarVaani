@@ -167,8 +167,11 @@ input, textarea, select { font-family: inherit; }
 .nearme-pin { font-size: 16px; }
 .nearme-refresh { background: var(--info); color: white; border: none; border-radius: var(--radius); padding: 6px 12px; font-size: 12px; font-weight: 500; }
 .nearme-refresh:hover { background: #1D4ED8; }
-.nearme-manual { display: flex; align-items: flex-start; gap: 10px; background: var(--info-bg); border: 1px solid #93C5FD; border-radius: var(--radius); padding: 10px 12px; font-size: 12px; color: var(--info); margin-bottom: 12px; flex-wrap: wrap; }
+.nearme-manual { display: flex; flex-direction: column; gap: 8px; background: var(--info-bg); border: 1px solid #93C5FD; border-radius: var(--radius); padding: 10px 12px; font-size: 12px; color: var(--info); margin-bottom: 12px; }
 .nearme-manual[hidden] { display: none; }
+.nearme-manual-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.nearme-manual-close { background: none; border: none; color: var(--info); font-size: 13px; cursor: pointer; padding: 2px 4px; line-height: 1; }
+.nearme-manual-close:hover { opacity: 0.7; }
 .nearme-manual-form { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 260px; }
 .nearme-manual-row { display: flex; gap: 6px; }
 .nearme-manual-row .form-input { padding: 7px 10px; font-size: 13px; margin-bottom: 0; }
