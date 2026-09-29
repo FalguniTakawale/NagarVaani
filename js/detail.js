@@ -57,6 +57,17 @@ export async function doDispute(id = currentComplaintId) {
   }
 }
 
+// The compose-box avatar used to be a hardcoded "FT" in the markup — always
+// showed whoever built the page's initials, regardless of who was actually
+// signed in (or signed in as, e.g. the ramesh@test.com demo account). Same
+// initials logic as the topbar avatar in api.js's applyAuthUI().
+function updateCommentComposeAvatar() {
+  const el = document.getElementById('comment-compose-avatar');
+  if (!el) return;
+  if (!authUser) { el.textContent = '?'; return; }
+  el.textContent = String(authUser.name || '?').trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+}
+
 export async function postComment() {
   if (!currentComplaintId) return;
   const input = document.getElementById('comment-input');
@@ -177,6 +188,7 @@ export async function loadComplaintDetail(id) {
   document.getElementById('detail-title').textContent = 'Loading…';
   document.getElementById('detail-chips').innerHTML = '';
   document.getElementById('detail-meta').innerHTML = '';
+  updateCommentComposeAvatar();
   try {
     const c = await api(`/complaints/${id}`);
     const isCritical = c.is_safety_risk || c.priority_score >= 80;

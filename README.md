@@ -85,6 +85,50 @@ Seeded logins:
 
 ---
 
+## Testing the Telegram bot
+
+NagarVaani's Telegram channel runs through the exact same filter → classify
+→ score pipeline as the web form, as either text or a voice note.
+
+**If a bot token is already set** (see `TELEGRAM_BOT_TOKEN` below) and the
+service is deployed with a public URL, just open Telegram and message
+**[@NagarvaaniHackBot](https://t.me/NagarvaaniHackBot)** — no setup needed
+on your end:
+
+1. Send a civic complaint as plain text, in any supported language (e.g.
+   *"Naali bhar gayi hai Shivaji Nagar mein"*), or record a voice note
+2. If the bot doesn't already know your area, it asks for one, then
+   whether you'd like to attach a photo
+3. It replies with a priority score, category, and a complaint ID
+4. From the website, sign in → **Link Telegram** in the right panel to
+   connect your account — linked complaints then also show up under
+   "My complaints", and you get status-update messages here when an
+   official changes something
+
+**Why this doesn't work against a plain `localhost` dev server:** Telegram
+delivers messages by calling your server's webhook URL directly, which
+means that URL has to be a real public HTTPS address — it can't reach
+`http://127.0.0.1:8000`. Two ways around that for local development:
+
+- **Deploy it** (see the Render section below) — the assigned
+  `https://<name>.onrender.com` URL works as-is.
+- **Tunnel it** — run `ngrok http 8000` (or a similar tool) and register
+  the tunnel's HTTPS URL as the webhook (one-time, from your own machine):
+  ```bash
+  curl "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
+    -d url=https://<your-ngrok-subdomain>.ngrok-free.app/api/telegram/webhook \
+    -d secret_token=<TELEGRAM_WEBHOOK_SECRET>
+  ```
+
+**To test with your own bot instead** of the one already configured:
+create one via [@BotFather](https://t.me/BotFather) (`/newbot`, no approval
+wait — unlike WhatsApp's Cloud API), then set `TELEGRAM_BOT_TOKEN` and a
+random `TELEGRAM_WEBHOOK_SECRET` in `.env`/your Render environment, and
+register the webhook with the `curl` command in step 7 of the Render
+section below.
+
+---
+
 ## Environment variables
 
 All read from `Backend/.env` (see `.env.example`).

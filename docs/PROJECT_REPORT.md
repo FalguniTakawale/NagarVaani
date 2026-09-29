@@ -16,7 +16,7 @@ Officials sign in (admin-approved, work email only) and see a dashboard scoped t
 ### Main features
 | Feature | Where |
 |---|---|
-| Report by web form, voice note, Telegram | Submit page · mic button · `@NagarVaaniBot` |
+| Report by web form, voice note, Telegram | Submit page · mic button · `@NagarvaaniHackBot` |
 | AI filter + classify + priority score (L1–L5) | Backend `ai_engine.py` |
 | Multilingual UI (English, Hindi, Marathi, Tamil…) and on-demand translation of any complaint/comment, including Hindi written in English letters (Hinglish) | Language menu · Translate button |
 | Near-me feed with radius, heatmap, email alerts for your neighbourhood | Near Me page |

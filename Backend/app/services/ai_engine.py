@@ -414,7 +414,7 @@ never invent a feature, price, timeline, or government process that isn't listed
 
 What NagarVaani actually does:
 - Citizens report civic issues (drainage, garbage, road, electricity, tree hazards, water supply)
-  by web form, voice note, or the Telegram bot @NagarVaaniBot — in Hindi, Marathi, Tamil, or English.
+  by web form, voice note, or the Telegram bot @NagarvaaniHackBot — in Hindi, Marathi, Tamil, or English.
 - Reporting works anonymously (you get a tracking ID) or signed in (saved to "My complaints").
 - An AI ranks complaints by real severity, monsoon-season risk, and how many areas report the
   same problem — NOT by vote count. A 3-vote monsoon drain can outrank a 100-vote pothole.
@@ -524,10 +524,10 @@ _LOCAL_FAQ = [
             "ta": ["புகார் எப்படி அளிப்பது", "எப்படி புகார் செய்வது"],
         },
         "answer": {
-            "en": 'Tap "Report an issue", describe the problem in any language (typing or a voice note), add a photo and your location, and submit — no account needed. You can also message the Telegram bot @NagarVaaniBot directly.',
-            "hi": '"शिकायत दर्ज करें" पर टैप करें, समस्या को किसी भी भाषा में लिखें या वॉइस नोट भेजें, फोटो और लोकेशन जोड़ें, और सबमिट करें — खाता ज़रूरी नहीं। आप सीधे Telegram बॉट @NagarVaaniBot को भी मैसेज कर सकते हैं।',
-            "mr": '"तक्रार नोंदवा" वर टॅप करा, समस्या कोणत्याही भाषेत टाइप करा किंवा ध्वनी-नोंद पाठवा, फोटो आणि ठिकाण जोडा, आणि सबमिट करा — खाते आवश्यक नाही. तुम्ही थेट Telegram बॉट @NagarVaaniBot लाही मेसेज करू शकता.',
-            "ta": '"புகார் அளிக்க" என்பதைத் தட்டவும், பிரச்சினையை எந்த மொழியிலும் தட்டச்சு செய்யவும் அல்லது குரல் குறிப்பு அனுப்பவும், புகைப்படமும் இருப்பிடத்தையும் சேர்த்து சமர்ப்பிக்கவும் — கணக்கு தேவையில்லை. நீங்கள் நேரடியாக Telegram bot @NagarVaaniBot-க்கும் செய்தி அனுப்பலாம்.',
+            "en": 'Tap "Report an issue", describe the problem in any language (typing or a voice note), add a photo and your location, and submit — no account needed. You can also message the Telegram bot @NagarvaaniHackBot directly.',
+            "hi": '"शिकायत दर्ज करें" पर टैप करें, समस्या को किसी भी भाषा में लिखें या वॉइस नोट भेजें, फोटो और लोकेशन जोड़ें, और सबमिट करें — खाता ज़रूरी नहीं। आप सीधे Telegram बॉट @NagarvaaniHackBot को भी मैसेज कर सकते हैं।',
+            "mr": '"तक्रार नोंदवा" वर टॅप करा, समस्या कोणत्याही भाषेत टाइप करा किंवा ध्वनी-नोंद पाठवा, फोटो आणि ठिकाण जोडा, आणि सबमिट करा — खाते आवश्यक नाही. तुम्ही थेट Telegram बॉट @NagarvaaniHackBot लाही मेसेज करू शकता.',
+            "ta": '"புகார் அளிக்க" என்பதைத் தட்டவும், பிரச்சினையை எந்த மொழியிலும் தட்டச்சு செய்யவும் அல்லது குரல் குறிப்பு அனுப்பவும், புகைப்படமும் இருப்பிடத்தையும் சேர்த்து சமர்ப்பிக்கவும் — கணக்கு தேவையில்லை. நீங்கள் நேரடியாக Telegram bot @NagarvaaniHackBot-க்கும் செய்தி அனுப்பலாம்.',
         },
     },
     {
@@ -580,10 +580,10 @@ _LOCAL_FAQ = [
             "ta": ["டெலிகிராம்"],
         },
         "answer": {
-            "en": "Message @NagarVaaniBot on Telegram to report issues by text or voice note. Link it to your account from your profile panel to get status updates there too.",
-            "hi": "टेक्स्ट या वॉइस नोट से शिकायत दर्ज करने के लिए Telegram पर @NagarVaaniBot को मैसेज करें। स्टेटस अपडेट पाने के लिए इसे अपने प्रोफ़ाइल पैनल से अपने खाते से लिंक करें।",
-            "mr": "मजकूर किंवा ध्वनी-नोंदीद्वारे तक्रार नोंदवण्यासाठी Telegram वर @NagarVaaniBot ला मेसेज करा. स्टेटस अपडेट्स मिळवण्यासाठी ते तुमच्या प्रोफाइल पॅनेलमधून खात्याशी लिंक करा.",
-            "ta": "உரை அல்லது குரல் குறிப்பு மூலம் புகாரளிக்க Telegram-இல் @NagarVaaniBot-க்கு செய்தி அனுப்பவும். நிலை புதுப்பிப்புகளைப் பெற உங்கள் சுயவிவரப் பலகத்திலிருந்து அதை உங்கள் கணக்குடன் இணைக்கவும்.",
+            "en": "Message @NagarvaaniHackBot on Telegram to report issues by text or voice note. Link it to your account from your profile panel to get status updates there too.",
+            "hi": "टेक्स्ट या वॉइस नोट से शिकायत दर्ज करने के लिए Telegram पर @NagarvaaniHackBot को मैसेज करें। स्टेटस अपडेट पाने के लिए इसे अपने प्रोफ़ाइल पैनल से अपने खाते से लिंक करें।",
+            "mr": "मजकूर किंवा ध्वनी-नोंदीद्वारे तक्रार नोंदवण्यासाठी Telegram वर @NagarvaaniHackBot ला मेसेज करा. स्टेटस अपडेट्स मिळवण्यासाठी ते तुमच्या प्रोफाइल पॅनेलमधून खात्याशी लिंक करा.",
+            "ta": "உரை அல்லது குரல் குறிப்பு மூலம் புகாரளிக்க Telegram-இல் @NagarvaaniHackBot-க்கு செய்தி அனுப்பவும். நிலை புதுப்பிப்புகளைப் பெற உங்கள் சுயவிவரப் பலகத்திலிருந்து அதை உங்கள் கணக்குடன் இணைக்கவும்.",
         },
     },
     {
