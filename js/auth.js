@@ -303,6 +303,17 @@ export async function completeSignup() {
       const e = document.getElementById('signup-pass-error');
       e.textContent = err.message; e.classList.add('show');
       goToStep(1);
+    } else if (err.status === 409) {
+      // "Email already registered" used to only surface as a toast (easy to
+      // miss/dismiss) with no clear next step — the user is then stuck
+      // waiting for a verification email that was never going to be sent,
+      // since there's nothing left to verify on an already-verified account.
+      // Flag it directly on the field and offer the actual next action.
+      const e = document.getElementById('signup-email-error');
+      e.innerHTML = `${t('auth.emailexists')} <a style="text-decoration:underline;cursor:pointer;" onclick="switchAuthTabByName('signin');document.getElementById('signin-email').value=document.getElementById('signup-email').value;">${t('auth.emailexistslink')}</a>`;
+      e.classList.add('show');
+      goToStep(1);
+      return; // don't also fire the generic toast below for this case
     }
     showToast(err.message);
   } finally {

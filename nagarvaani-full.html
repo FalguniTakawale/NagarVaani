@@ -1957,7 +1957,7 @@
         </div>
         <form id="signup-form-1" autocomplete="on" onsubmit="event.preventDefault(); goToStep(2);">
         <div class="form-group"><label class="form-label" data-i18n="auth.fullname">Full name</label><input class="form-input" id="signup-name" name="name" autocomplete="name" placeholder="Your name" /></div>
-        <div class="form-group"><label class="form-label" data-i18n="auth.email">Email</label><input class="form-input" type="email" id="signup-email" name="email" autocomplete="email" placeholder="your@email.com" /></div>
+        <div class="form-group"><label class="form-label" data-i18n="auth.email">Email</label><input class="form-input" type="email" id="signup-email" name="email" autocomplete="email" placeholder="your@email.com" oninput="document.getElementById('signup-email-error').classList.remove('show')" /><div class="form-error" id="signup-email-error"></div></div>
         <div class="form-group">
           <label class="form-label" data-i18n="auth.password">Password</label>
           <input class="form-input" type="password" id="signup-pass" name="new-password" autocomplete="new-password" placeholder="8+ chars, upper, lower, digit, symbol" oninput="updatePasswordStrength(this.value)" />
