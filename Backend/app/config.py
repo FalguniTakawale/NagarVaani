@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_webhook_secret: str = ""  # sent by Telegram as X-Telegram-Bot-Api-Secret-Token
     openai_api_key: str = ""       # STT fallback option — see stt.py _PROVIDER
+    stt_provider: str = ""         # optional: force groq | huggingface | openai (default: first key found)
     groq_api_key: str = ""         # STT fallback option — free-hosted Whisper, OpenAI-SDK-compatible
     huggingface_api_key: str = ""  # STT default — free serverless Inference API
 
