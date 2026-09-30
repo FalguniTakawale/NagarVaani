@@ -2,6 +2,7 @@ import hashlib
 import os
 import re
 
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -11,6 +12,7 @@ from pathlib import Path
 
 from app.config import get_settings
 from app.database import create_tables
+from app.services import telegram_client
 from app.routers import admin, auth, chatbot, complaints, media, stats, subscriptions, telegram, translate
 
 settings = get_settings()
@@ -31,6 +33,14 @@ async def lifespan(app: FastAPI):
     await create_tables()
     from app.services.bootstrap import bootstrap_admin
     await bootstrap_admin()
+    # Telegram: auto-register the webhook on deploy (production only, best-effort,
+    # in the background so a slow Telegram API never delays startup).
+    if not IS_DEV and telegram_client.is_configured():
+        public = os.environ.get("RENDER_EXTERNAL_URL") or (settings.frontend_url.split(",")[0] if settings.frontend_url else "")
+
+        async def _register():
+            print(f"[telegram] webhook {await telegram_client.register_webhook(public)}")
+        asyncio.create_task(_register())
     yield
 
 

@@ -299,7 +299,7 @@ other provider) whenever you want a deployment that keeps its data.
    uvicorn. Check `/api/health`, then open the root URL.
 6. Seed the demo data once, from the Render **Shell** tab:
    `cd Backend && python seed_data.py`
-7. Telegram (optional): register the webhook with your bot token —
+7. Telegram (optional): **the webhook is registered automatically at startup** when `TELEGRAM_BOT_TOKEN` and `TELEGRAM_WEBHOOK_SECRET` (letters, numbers, `_`, `-` only) are set — check the deploy log for `[telegram] webhook registered`. To do it by hand instead —
    ```
    curl "https://api.telegram.org/bot<TOKEN>/setWebhook" \
      -d url=https://<your-service>.onrender.com/api/telegram/webhook \
