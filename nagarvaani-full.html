@@ -1625,6 +1625,7 @@
   </div>
   <div class="submit-wrap">
     <div class="back-link" onclick="nav('home')" style="margin-bottom:16px;display:inline-flex;align-items:center;gap:6px;color:var(--slate);cursor:pointer;" data-i18n="submit.back">← Back</div>
+    <div class="submit-layout">
     <div class="form-card">
       <div style="font-size:17px;font-weight:600;margin-bottom:4px;" data-i18n="submit.title">Report an issue</div>
       <div style="font-size:13px;color:var(--slate);margin-bottom:16px;" data-i18n="submit.sub">Write in any language — Hindi, Marathi, Tamil, English, whatever is easiest.</div>
@@ -1641,7 +1642,11 @@
       </div>
       <div class="form-group">
         <label class="form-label"><span data-i18n="submit.problem">What is the problem?</span> <span style="color:var(--critical)">*</span></label>
-        <textarea class="form-textarea" placeholder="Describe what you see. Be specific — which road, lane, or landmark?" data-i18n-placeholder="submit.problemph" id="complaint-text" required></textarea>
+        <textarea class="form-textarea" placeholder="Describe what you see. Be specific — which road, lane, or landmark?" data-i18n-placeholder="submit.problemph" id="complaint-text" maxlength="5000" required oninput="document.getElementById('complaint-count').textContent=this.value.length"></textarea>
+        <div class="text-meta">
+          <span class="text-sample"><span data-i18n="submit.sample.label">Example:</span> <em data-i18n="submit.sample.text">"Naali bhar gayi hai, paani ghar mein ghus raha hai." — Hindi, Marathi, Tamil, English or Hinglish all work.</em></span>
+          <span class="text-count"><span id="complaint-count">0</span> / 5000</span>
+        </div>
         <div class="voice-row">
           <button class="mic-btn" id="mic-btn" onclick="toggleRecording()">
             <span class="mic-dot"></span>
@@ -1698,6 +1703,32 @@
       <div class="ai-notice" data-i18n="submit.ainotice">ℹ Our AI will review your complaint before it goes live. Political or communal framing is rejected automatically — describe the infrastructure problem, not who you think is to blame.</div>
       <div class="channel-banner" data-i18n="submit.telegram">💬 Don't want to fill a form? Message <b>@NagarvaaniHackBot</b> on Telegram — send text or a voice note in your own language and it's processed the same way.</div>
       <button id="submit-btn" style="width:100%;background:var(--navy);color:white;border:none;border-radius:var(--radius);padding:12px;font-size:14px;font-weight:600;margin-top:16px;" onclick="submitComplaint()" data-i18n="submit.button">Submit complaint</button>
+    </div>
+    <aside class="submit-aside" aria-label="Help for reporting">
+      <div class="aside-card">
+        <div class="aside-title" data-i18n="submit.aside.next.title">What happens next</div>
+        <ol class="aside-steps">
+          <li><b data-i18n="submit.aside.s1.t">Checked &amp; scored.</b> <span data-i18n="submit.aside.s1.d">AI reads it in any language, then scores urgency by safety, season, people affected and pattern — not by votes.</span></li>
+          <li><b data-i18n="submit.aside.s2.t">Made visible.</b> <span data-i18n="submit.aside.s2.d">It appears in your ward's feed and on the map, and neighbours can add "same issue here".</span></li>
+          <li><b data-i18n="submit.aside.s3.t">Sent to officials.</b> <span data-i18n="submit.aside.s3.d">The responsible office sees a short AI brief, ranked by priority.</span></li>
+          <li><b data-i18n="submit.aside.s4.t">You're kept posted.</b> <span data-i18n="submit.aside.s4.d">Track it with your complaint ID. Signed-in users also get status updates, and can dispute a "resolved" that isn't fixed.</span></li>
+        </ol>
+      </div>
+      <div class="aside-card">
+        <div class="aside-title" data-i18n="submit.aside.tips.title">Tips for a good report</div>
+        <ul class="aside-tips">
+          <li data-i18n="submit.aside.tip1">Name the road, lane or landmark.</li>
+          <li data-i18n="submit.aside.tip2">Say how long it has been happening.</li>
+          <li data-i18n="submit.aside.tip3">Mention if anyone could be hurt — it raises priority.</li>
+          <li data-i18n="submit.aside.tip4">Add a photo, or use your location.</li>
+          <li data-i18n="submit.aside.tip5">Keep it about the problem — political or communal posts are filtered out.</li>
+        </ul>
+      </div>
+      <div class="aside-card aside-privacy">
+        <div class="aside-title" data-i18n="submit.aside.priv.title">Your privacy</div>
+        <div data-i18n="submit.aside.priv.text">You can report without an account. Anonymous reports carry no name or email. Your text and photos go only to the AI and storage services needed to process them.</div>
+      </div>
+    </aside>
     </div>
   </div>
 </div>

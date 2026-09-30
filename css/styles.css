@@ -505,7 +505,22 @@ input, textarea, select { font-family: inherit; }
 .corr-chip.anon { background: #1C1C1E; color: white; border-color: #1C1C1E; }
 
 /* ── SUBMIT PAGE ── */
-.submit-wrap { margin-left: 200px; padding: 24px; max-width: 620px; }
+.submit-wrap { margin: 0 auto; padding: 24px; max-width: 1040px; }
+/* Form on the left, help panel on the right; stacks on narrow screens. */
+.submit-layout { display: grid; grid-template-columns: minmax(0, 620px) minmax(260px, 340px); gap: 24px; align-items: start; justify-content: center; }
+.submit-aside { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 72px; }
+.aside-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; font-size: 13px; color: var(--text-soft); line-height: 1.55; }
+.aside-title { font-size: 13.5px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+.aside-steps { list-style: none; counter-reset: st; display: flex; flex-direction: column; gap: 10px; }
+.aside-steps li { counter-increment: st; position: relative; padding-left: 30px; }
+.aside-steps li::before { content: counter(st); position: absolute; left: 0; top: 1px; width: 21px; height: 21px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 11.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.aside-steps b { color: var(--navy); }
+.aside-tips { padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+.aside-privacy { background: var(--navy-subtle); border-color: transparent; }
+.text-meta { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-top: 6px; font-size: 11.5px; color: var(--slate); }
+.text-sample em { font-style: italic; }
+.text-count { white-space: nowrap; font-variant-numeric: tabular-nums; }
+@media (max-width: 980px) { .submit-layout { grid-template-columns: minmax(0, 1fr); } .submit-aside { position: static; } }
 .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .cat-btn { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 6px; font-size: 12px; font-weight: 500; color: var(--slate); background: var(--surface2); display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
 .cat-btn:hover { border-color: var(--navy); color: var(--navy); }
@@ -623,7 +638,6 @@ input, textarea, select { font-family: inherit; }
   .detail-shell { grid-template-columns: 1fr; }
   .detail-sidebar { display: none; }
   .govt-wrap { margin-left: 0; }
-  .submit-wrap { margin-left: 0; }
   .corr-wrap { margin-left: 0; }
   .govt-stats { grid-template-columns: repeat(2,1fr); }
   .govt-grid { grid-template-columns: 1fr; }
