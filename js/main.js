@@ -85,7 +85,15 @@ Object.assign(window, {
 // it after the browser's own autofill pass is the only reliable way to stop
 // the topbar search box from showing up pre-filled with someone's email.
 const topbarSearchInput = document.getElementById('topbar-search-input');
-if (topbarSearchInput) topbarSearchInput.value = '';
+if (topbarSearchInput) {
+  // The input is read-only until focused (see the HTML) so Chrome won't autofill
+  // a saved login into it; these late clears are the belt-and-braces backup for
+  // an autofill that lands after this script ran, or from the back/forward cache.
+  const clearIfAutofilled = () => { if (document.activeElement !== topbarSearchInput) topbarSearchInput.value = ''; };
+  clearIfAutofilled();
+  [300, 1200, 3000].forEach(ms => setTimeout(clearIfAutofilled, ms));
+  window.addEventListener('pageshow', clearIfAutofilled);
+}
 
 applyLanguage();   // restores the language saved in localStorage ('nv_lang')
 applyAuthUI();     // officials are switched straight into the portal here

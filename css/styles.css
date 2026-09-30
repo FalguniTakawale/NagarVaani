@@ -825,11 +825,13 @@ body.official-mode .page { display: none !important; }
   border-color: var(--saffron);
   box-shadow: 0 10px 24px rgba(15,32,66,0.10);
 }
-.quicklink-card-featured {
+/* No permanently-dark "featured" card: it read as a stuck selection. The
+   highlight now follows the pointer/keyboard focus, identically on every card. */
+.quicklink-card:hover, .quicklink-card:focus-visible {
   background: var(--navy); border-color: var(--navy);
 }
-.quicklink-card-featured .ql-label { color: white; }
-.quicklink-card-featured .ql-arrow { color: white; }
+.quicklink-card:hover .ql-label, .quicklink-card:hover .ql-arrow,
+.quicklink-card:focus-visible .ql-label, .quicklink-card:focus-visible .ql-arrow { color: white; }
 .ql-icon {
   width: 44px; height: 44px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
