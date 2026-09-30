@@ -26,7 +26,7 @@ async def ward_stats(
         scope_cond = Complaint.ward == ward
         label = f"Ward {ward}"
     elif city:
-        scope_cond = Complaint.city == city
+        scope_cond = func.lower(func.trim(Complaint.city)) == city.strip().lower()
         label = city
     else:
         scope_cond = true()
@@ -246,7 +246,7 @@ async def map_points(
     if scope == "ward" and ward:
         q = q.where(Complaint.ward == ward)
     elif scope == "city" and city:
-        q = q.where(Complaint.city == city)
+        q = q.where(func.lower(func.trim(Complaint.city)) == city.strip().lower())
     elif scope == "state" and state:
         q = q.where(Complaint.state == state)
     # scope == "national" (default): no geography filter

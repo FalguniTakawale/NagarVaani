@@ -205,7 +205,39 @@ export async function loadLandingStats() {
   } catch (err) { /* supplementary — fail quietly */ }
 }
 
-export async function loadFeed(page, { silent = false } = {}) {
+/* ── PAGINATION (Home + Trending/nationwide) ──
+   10 per page with Previous / Next. The API returns just a list, so "Next" is offered
+   when a page comes back full; a full-but-last page just shows an empty next page,
+   which steps itself back. Any change of sort/filter/tab starts again at page 1. */
+const PAGE_SIZE = 10;
+const feedPageNo = { home: 1, trending: 1 };
+
+function renderPager(page, container, count) {
+  const id = page + '-pager';
+  let el = document.getElementById(id);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = id; el.className = 'feed-pager';
+    container.insertAdjacentElement('afterend', el);
+  }
+  const n = feedPageNo[page];
+  const hasNext = count >= PAGE_SIZE;
+  if (n === 1 && !hasNext) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <button class="pager-btn" ${n <= 1 ? 'disabled' : ''} onclick="feedGoPage('${page}', ${n - 1})">← Previous</button>
+    <span class="pager-info">Page ${n}</span>
+    <button class="pager-btn" ${hasNext ? '' : 'disabled'} onclick="feedGoPage('${page}', ${n + 1})">Next →</button>`;
+}
+
+export function feedGoPage(page, n) {
+  feedPageNo[page] = Math.max(1, n);
+  loadFeed(page, { keepPage: true });
+  const top = document.getElementById(page === 'home' ? 'home-feed-list' : 'trending-feed-list');
+  if (top) top.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+export async function loadFeed(page, { silent = false, keepPage = false } = {}) {
+  if (feedPageNo[page] !== undefined && !keepPage) feedPageNo[page] = 1;
   if (page === 'trending') loadSchemesStats();
   const listMap = { home: 'home-feed-list', trending: 'trending-feed-list', nearme: 'nearme-feed-list', mycomplaints: 'mycomplaints-feed-list', myvotes: 'myvotes-feed-list' };
   const scopeMap = { home: 'ward', trending: 'trending', nearme: 'nearby', mycomplaints: 'mine', myvotes: 'voted' };
@@ -222,6 +254,7 @@ export async function loadFeed(page, { silent = false } = {}) {
   }
 
   const params = new URLSearchParams({ scope, sort: scope === 'mine' ? 'recent' : currentSort });
+  if (feedPageNo[page] !== undefined) { params.set('per_page', String(PAGE_SIZE)); params.set('page', String(feedPageNo[page])); }
   if (scope === 'trending' && trendingAreaFilter) params.set('near_text', trendingAreaFilter);
   if (scope === 'mine') {
     if (myStatusFilter) params.set('status_filter', myStatusFilter);
@@ -249,6 +282,7 @@ export async function loadFeed(page, { silent = false } = {}) {
   let knownLocation = true;
   if (page === 'home') {
     if (authUser && authUser.ward) params.set('ward', authUser.ward);
+    else if (authUser && authUser.city) params.set('city', authUser.city);   // ward is optional at signup
     knownLocation = !!(authUser && (authUser.ward || authUser.area || authUser.city));
     const title = document.getElementById('home-feed-title');
     if (title) {
@@ -286,11 +320,19 @@ async function fetchAndRenderFeed(container, params, { render = renderComplaintC
     const complaints = await api('/complaints?' + params.toString());
     container.dataset.live = '1';
     if (after) after(complaints);
+    const pgName = params.get('scope') === 'trending' ? 'trending' : params.get('scope') === 'ward' ? 'home' : null;
+    if (!complaints.length && pgName && feedPageNo[pgName] > 1) {   // ran past the last page
+      feedPageNo[pgName] -= 1;
+      return fetchAndRenderFeed(container, (() => { const p = new URLSearchParams(params); p.set('page', String(feedPageNo[pgName])); return p; })(), { render, empty, after });
+    }
     if (!complaints.length) {
+      if (pgName) { const el = document.getElementById(pgName + '-pager'); if (el) el.innerHTML = ''; }
       container.innerHTML = empty || `<div style="padding:24px;text-align:center;color:var(--slate);font-size:13px;"><span data-i18n="js.empty">${t('js.empty')}</span> <a style="color:var(--navy);cursor:pointer;" data-i18n="js.emptylink" onclick="nav('submit')">${t('js.emptylink')}</a>.</div>`;
       return;
     }
     container.innerHTML = complaints.map(render).join('');
+    const pg = params.get('scope') === 'trending' ? 'trending' : params.get('scope') === 'ward' ? 'home' : null;
+    if (pg && feedPageNo[pg] !== undefined) renderPager(pg, container, complaints.length);
   } catch (err) {
     if (container.querySelector('.loading-state')) {
       container.innerHTML = `<div style="padding:24px;text-align:center;color:var(--critical);font-size:13px;">Couldn't load complaints — ${escapeHtml(err.message)}</div>`;

@@ -8,7 +8,7 @@ import { applyLanguage, setLanguage, toggleLangMenu, t } from './i18n.js';
 import './speak.js';   // read-aloud: registers its own delegated click handler
 import { nav, openComplaint, topbarSearch, trackComplaintById } from './nav.js';
 import { toggleRecording } from './voice.js';
-import { sortToggle, selectCat, voteUp, quickVote, setMyStatusFilter, filterTrendingByArea, clearTrendingAreaFilter, toggleSchemesPanel, toggleNotifMenu, refreshNotifDot, translateCardTitle } from './feed.js';
+import { sortToggle, selectCat, feedGoPage, voteUp, quickVote, setMyStatusFilter, filterTrendingByArea, clearTrendingAreaFilter, toggleSchemesPanel, toggleNotifMenu, refreshNotifDot, translateCardTitle } from './feed.js';
 import { doVote, doSameIssue, postComment, doTranslate, doDispute, translateComment, shareComplaint, flagComplaint } from './detail.js';
 import {
   submitComplaint, captureLocation, overrideSubmitCityState,
@@ -54,7 +54,7 @@ function doSignOut() {
 
 Object.assign(window, {
   nav, openComplaint, toggleRecording, doSignOut, startTelegramLink, topbarSearch, trackComplaintById,
-  sortToggle, selectCat, voteUp, quickVote, setMyStatusFilter, filterTrendingByArea, clearTrendingAreaFilter, toggleSchemesPanel,
+  sortToggle, selectCat, feedGoPage, voteUp, quickVote, setMyStatusFilter, filterTrendingByArea, clearTrendingAreaFilter, toggleSchemesPanel,
   toggleNotifMenu, translateCardTitle,
   toggleChatbotPanel, sendChatbotMessage, askChatbotSuggestion,
   sendVolunteerInterest, sendOrgPartnerInterest,

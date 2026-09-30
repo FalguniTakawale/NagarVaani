@@ -179,7 +179,7 @@ async def submit_complaint(
 # ── LIST COMPLAINTS ───────────────────────────────────────────────────────────
 @router.get("", response_model=List[dict])
 async def list_complaints(
-    scope: str = Query("ward", description="ward | trending | nearby | mine | voted | jurisdiction | corruption"),
+    scope: str = Query("ward", description="ward | city | trending | nearby | mine | voted | jurisdiction | corruption"),
     ward: Optional[str] = Query(None),
     city: Optional[str] = Query(None),
     state: Optional[str] = Query(None),
@@ -230,10 +230,14 @@ async def list_complaints(
     if scope == "ward":
         # Use logged-in user's ward if not explicitly passed
         ward_filter = ward or (current_user.ward if current_user else None)
+        # No ward on the account (ward is optional at signup) → fall back to the
+        # user's own city rather than showing an empty "no issues in your area"
+        # while complaints from that same city exist.
+        city_filter = city or (current_user.city if current_user else None)
         if ward_filter:
             q = q.where(Complaint.ward == ward_filter)
-        elif city:
-            q = q.where(Complaint.city == city)
+        elif city_filter:
+            q = q.where(func.lower(func.trim(Complaint.city)) == city_filter.strip().lower())
         else:
             # No ward and no city to scope to (a guest with no account, or a
             # logged-in user who never set a location) — this must NOT fall
@@ -241,6 +245,11 @@ async def list_complaints(
             # ward" showing every ward in the country is a real bug, not a
             # helpful fallback. Return nothing rather than mislead.
             q = q.where(false())
+    elif scope == "city":
+        # Explicit whole-city view (e.g. when a ward has nothing yet). Case- and
+        # whitespace-insensitive because city is free text.
+        city_filter = city or (current_user.city if current_user else None)
+        q = q.where(func.lower(func.trim(Complaint.city)) == city_filter.strip().lower()) if city_filter else q.where(false())
     elif scope == "trending":
         # Nationwide by default; near_text narrows it to a specific area/ward/city
         # without needing GPS — same free-text match "nearby" uses without a fix.
@@ -300,7 +309,7 @@ async def list_complaints(
     # specific status (so e.g. a future "show resolved too" toggle can still
     # request it) — it never applies to "My complaints", where seeing your
     # own resolved items is the whole point.
-    if scope in ("ward", "trending") and not status_filter:
+    if scope in ("ward", "city", "trending") and not status_filter:
         q = q.where(Complaint.status != ComplaintStatus.resolved)
 
     # Category filter

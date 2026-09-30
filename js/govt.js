@@ -7,13 +7,29 @@ const OFFICIAL_LEVEL_LABELS = {
   state: 'State official', central: 'Central ministry',
 };
 
+/* Who's looking, and at what area. Officials use their jurisdiction. Everyone else
+   (signed-in citizens, guests) sees their own ward if the profile has one, else their
+   city; only a guest with no location at all gets the labelled "Ward 12 (demo)" example.
+   Ward is optional at signup, so a citizen without one must not be shown an empty
+   demo ward. */
+const wardText = w => (/^\s*ward\b/i.test(w) ? String(w).trim() : `Ward ${w}`);   // profile may already say "Ward 9"
+
+function citizenArea() {
+  if (authUser && authUser.ward) return { kind: 'ward', ward: authUser.ward, city: authUser.city || null, label: `${wardText(authUser.ward)}${authUser.city ? ' · ' + authUser.city : ''}` };
+  if (authUser && authUser.city) return { kind: 'city', city: authUser.city, label: authUser.city };
+  return { kind: 'demo', ward: '12', city: null, label: 'Ward 12 (demo)' };
+}
+
 function jurisdictionLabel() {
-  if (!authUser) return 'Ward 12 (demo)';
+  if (!authUser) return citizenArea().label;
   const level = authUser.official_level;
-  if (level === 'central') return 'Nationwide';
-  if (level === 'state') return authUser.state || 'State';
-  if (level === 'municipal' || level === 'district') return authUser.city || 'City';
-  return authUser.ward ? `Ward ${authUser.ward}` : 'Ward';
+  if (authUser.role === 'official') {
+    if (level === 'central') return 'Nationwide';
+    if (level === 'state') return authUser.state || 'State';
+    if (level === 'municipal' || level === 'district') return authUser.city || 'City';
+    return authUser.ward ? wardText(authUser.ward) : 'Ward';
+  }
+  return citizenArea().label;
 }
 
 function renderClusters(containerId, complaints) {
@@ -48,13 +64,14 @@ export async function loadGovtDashboard() {
   govtLoadedOnce = true;
 
   const useJurisdiction = authUser && authUser.role === 'official';
-  const scopeParam = useJurisdiction ? 'jurisdiction' : 'ward';
-  const wardFallback = '12';
+  const area = citizenArea();
 
   try {
-    const statsUrl = useJurisdiction && authUser.official_level === 'ward_officer'
-      ? `/stats/ward?ward=${encodeURIComponent(authUser.ward || wardFallback)}`
-      : `/stats/ward?ward=${encodeURIComponent(authUser && authUser.ward ? authUser.ward : wardFallback)}`;
+    let statsUrl;
+    if (useJurisdiction && authUser.official_level === 'ward_officer') statsUrl = `/stats/ward?ward=${encodeURIComponent(authUser.ward || area.ward || '12')}`;
+    else if (useJurisdiction) statsUrl = `/stats/ward?ward=${encodeURIComponent(area.ward || '12')}`;
+    else if (area.kind === 'city') statsUrl = `/stats/ward?city=${encodeURIComponent(area.city)}`;
+    else statsUrl = `/stats/ward?ward=${encodeURIComponent(area.ward)}`;
     const stats = await api(statsUrl);
     document.getElementById('govt-stat-critical').textContent = stats.critical;
     document.getElementById('govt-stat-inprogress').textContent = stats.in_progress;
@@ -67,14 +84,23 @@ export async function loadGovtDashboard() {
   const list = document.getElementById('govt-briefs-list');
   if (!list.children.length || list.dataset.live === '1') list.innerHTML = loadingPlaceholder('Loading briefs…');
   try {
-    // scope=ward with no ward param returns nothing by design (fixed
-    // elsewhere to stop leaking a nationwide dump under a ward-scoped
-    // heading) — this page's own "no session" demo fallback needs the
-    // same explicit ward the stats call above already uses.
-    const wardParam = !useJurisdiction ? `&ward=${encodeURIComponent(authUser && authUser.ward ? authUser.ward : wardFallback)}` : '';
-    const complaints = await api(`/complaints?scope=${scopeParam}&sort=priority&status_filter=open${wardParam}`);
+    const base = 'sort=priority&status_filter=open';
+    let complaints, note = '';
+    if (useJurisdiction) {
+      complaints = await api(`/complaints?scope=jurisdiction&${base}`);
+    } else if (area.kind === 'city') {
+      complaints = await api(`/complaints?scope=city&city=${encodeURIComponent(area.city)}&${base}`);
+    } else {
+      complaints = await api(`/complaints?scope=ward&ward=${encodeURIComponent(area.ward)}&${base}`);
+      // Nothing in the ward yet but we know the city → show the city instead of an
+      // empty page, and say so.
+      if (!complaints.length && area.city) {
+        complaints = await api(`/complaints?scope=city&city=${encodeURIComponent(area.city)}&${base}`);
+        if (complaints.length) note = `<div style="padding:8px 12px;margin-bottom:8px;background:var(--navy-subtle);border-radius:var(--radius);font-size:12px;color:var(--text-soft);">No open issues recorded for ${escapeHtml(area.label.split(' · ')[0])} yet — showing everything open in <b>${escapeHtml(area.city)}</b>.</div>`;
+      }
+    }
     list.dataset.live = '1';
-    list.innerHTML = complaints.length
+    list.innerHTML = note + (complaints.length
       ? complaints.map(c => `
       <div class="brief-card ${c.priority_score >= 80 ? 'urgent' : ''}">
         <div class="brief-top">
@@ -90,9 +116,9 @@ export async function loadGovtDashboard() {
           </div>
         </div>
       </div>`).join('')
-      : `<div style="padding:16px;color:var(--slate);font-size:13px;">No open complaints in ${jurisdictionLabel()} right now.</div>`;
-    // Real cross-district clusters, derived from the same jurisdiction data —
-    // no fabricated project names or cost estimates, just what's actually there.
+      : `<div style="padding:16px;color:var(--slate);font-size:13px;">No open complaints in ${escapeHtml(jurisdictionLabel())} right now.</div>`);
+    // Real cross-district clusters, derived from the same data — no fabricated
+    // project names or cost estimates, just what's actually there.
     renderClusters('govt-clusters-ward', complaints);
   } catch (err) {
     if (list.querySelector('.loading-state')) {
@@ -175,7 +201,8 @@ export async function initGovtMaps() {
   if (wardEl && wardEl.offsetParent !== null && !wardMap) {
     wardMap = L.map(wardEl, { zoomControl: false, attributionControl: false }).setView([18.5679, 73.8087], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(wardMap);
-    await loadHotspots(wardMap, { scope: 'ward', ward: (authUser && authUser.ward) || '12' });
+    const mapArea = citizenArea();
+    await loadHotspots(wardMap, mapArea.kind === 'city' ? { scope: 'city', city: mapArea.city } : { scope: 'ward', ward: authUser && authUser.role === 'official' ? (authUser.ward || mapArea.ward || '12') : mapArea.ward });
   }
   if (wardMap) setTimeout(() => wardMap.invalidateSize(), 100);
 
@@ -204,20 +231,21 @@ const DEMO_HOTSPOTS = {
   ],
 };
 
-async function loadHotspots(map, { scope, ward }) {
+async function loadHotspots(map, { scope, ward, city }) {
   try {
     const params = new URLSearchParams({ scope });
     if (ward) params.set('ward', ward);
+    if (city) params.set('city', city);
     const points = await api(`/stats/map?${params.toString()}`);
     const hotspots = points.length
       ? points.map(p => ({
           lat: p.lat, lng: p.lng, score: p.score,
           label: `${p.label} · ${CATEGORY_LABELS[p.category] || 'Other'}${p.linked_area_count ? ` · ${p.linked_area_count} linked areas` : ''}`,
         }))
-      : DEMO_HOTSPOTS[scope];
+      : (authUser ? [] : (DEMO_HOTSPOTS[scope] || []));   // example pins are for guests only, never a signed-in user's real area
     hotspots.forEach(h => addHotspotMarker(map, h));
   } catch (err) {
-    DEMO_HOTSPOTS[scope].forEach(h => addHotspotMarker(map, h));
+    if (!authUser) (DEMO_HOTSPOTS[scope] || []).forEach(h => addHotspotMarker(map, h));
   }
 }
 
