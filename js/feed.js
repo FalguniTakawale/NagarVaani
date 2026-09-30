@@ -362,6 +362,31 @@ export async function loadDashboardStats() {
   }
 
   loadGovtUpdates(params);
+  loadMyComplaintsPanel();
+}
+
+/* Right-panel "Your complaints": the signed-in user's own latest complaints (real
+   data — this used to be three hardcoded example rows). Empty state when none. */
+async function loadMyComplaintsPanel() {
+  const list = document.getElementById('mycomplaints-panel-list');
+  if (!list) return;
+  if (!authToken) { list.innerHTML = ''; return; }
+  try {
+    const items = await api('/complaints?scope=mine&sort=recent&per_page=3');
+    const pill = {
+      resolved: ['status-resolved', 'pill.resolved'], in_progress: ['status-progress', 'pill.progress'], open: ['status-open', 'pill.open'],
+      disputed: ['status-open', 'my.disputed'], rejected: ['status-open', 'my.rejected'],
+    };
+    list.innerHTML = items.length
+      ? items.map(c => {
+          const [cls, key] = pill[c.status] || pill.open;
+          const title = (c.text_translated || c.text_original || '').slice(0, 60);
+          return `<div class="my-complaint-item" style="cursor:pointer" onclick="openComplaint('${escapeHtml(c.id)}')"><div class="my-c-title">${escapeHtml(title)}</div><span class="status-pill ${cls}">${t(key)}</span></div>`;
+        }).join('')
+      : `<div style="font-size:11.5px;color:var(--slate-light);padding:4px 0 8px;">${t('panel.nomine')}</div>`;
+  } catch (err) {
+    list.innerHTML = '';
+  }
 }
 
 const STATUS_ICON_GOVT = { open: '◌', in_progress: '↻', resolved: '✓', disputed: '⚑', rejected: '✕' };

@@ -71,7 +71,7 @@ async def recent_updates(
     q = (
         select(StatusLog, Complaint)
         .join(Complaint, StatusLog.complaint_id == Complaint.id)
-        .where(Complaint.is_ai_filtered == True)
+        .where(Complaint.is_ai_filtered == True, Complaint.category != ComplaintCategory.corruption)
     )
     if ward:
         q = q.where(Complaint.ward == ward)
