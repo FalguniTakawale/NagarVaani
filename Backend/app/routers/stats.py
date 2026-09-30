@@ -295,6 +295,51 @@ SCHEME_FOR_CATEGORY = {
 }
 
 
+_CENSUS_BY_LOWER = {k.lower(): (k, v) for k, v in CENSUS_2011_MILLIONS.items()}
+
+
+async def _priority_items(db: AsyncSession) -> list[dict]:
+    """Shared by the JSON view and the CSV export, so they can never disagree.
+
+    - Corruption reports are excluded: they are a vigilance referral, must never
+      surface in investment/planning lists, and are login-gated everywhere else.
+    - States are grouped case- and whitespace-insensitively ("maharashtra " and
+      "Maharashtra" are one state), then shown with the canonical Census spelling
+      when there is one — otherwise the census join silently missed them.
+    """
+    import math
+    key = func.lower(func.trim(Complaint.state))
+    rows = (await db.execute(
+        select(key, func.max(Complaint.state), Complaint.category, func.count(Complaint.id),
+               func.avg(Complaint.priority_score), func.sum(Complaint.linked_area_count))
+        .where(Complaint.is_ai_filtered == True, Complaint.state.isnot(None),  # noqa: E712
+               Complaint.category != ComplaintCategory.corruption,
+               Complaint.status.in_([ComplaintStatus.open, ComplaintStatus.disputed, ComplaintStatus.in_progress]))
+        .group_by(key, Complaint.category)
+    )).all()
+    out = []
+    for lower_state, raw_state, cat, n, avg, linked in rows:
+        if not lower_state:
+            continue
+        canon, pop = _CENSUS_BY_LOWER.get(lower_state, ((raw_state or "").strip().title(), None))
+        cat_key = cat.value if hasattr(cat, "value") else str(cat)
+        avg = float(avg or 0)
+        out.append({
+            "state": canon, "category": cat_key, "open_complaints": n,
+            "avg_severity": round(avg, 1),
+            "linked_areas_total": int(linked or 0),
+            "population_millions_2011": pop,
+            "complaints_per_million": round(n / pop, 3) if pop else None,
+            "priority_index": round(avg * (1 + math.log(n)), 1),
+            "suggested_funding_scheme": SCHEME_FOR_CATEGORY.get(cat_key, "Ward-level budget"),
+        })
+    out.sort(key=lambda r: r["priority_index"], reverse=True)
+    return out
+
+
+PRIORITY_METHOD = "avg severity × (1 + ln(open complaints)); population = Census 2011"
+
+
 @router.get("/priorities")
 async def project_priorities(
     limit: int = Query(15, ge=1, le=50),
@@ -306,27 +351,38 @@ async def project_priorities(
     real central scheme that would fund it. priority_index is transparent:
     avg severity score × (1 + ln(open complaints)). It is a *triage aid* for
     planners, not a costed project plan."""
-    import math
-    rows = (await db.execute(
-        select(Complaint.state, Complaint.category, func.count(Complaint.id),
-               func.avg(Complaint.priority_score), func.sum(Complaint.linked_area_count))
-        .where(Complaint.is_ai_filtered == True, Complaint.state.isnot(None),  # noqa: E712
-               Complaint.status.in_([ComplaintStatus.open, ComplaintStatus.disputed, ComplaintStatus.in_progress]))
-        .group_by(Complaint.state, Complaint.category)
-    )).all()
-    out = []
-    for state, cat, n, avg, linked in rows:
-        cat_key = cat.value if hasattr(cat, "value") else str(cat)
-        pop = CENSUS_2011_MILLIONS.get(state)
-        avg = float(avg or 0)
-        out.append({
-            "state": state, "category": cat_key, "open_complaints": n,
-            "avg_severity": round(avg, 1),
-            "population_millions_2011": pop,
-            "complaints_per_million": round(n / pop, 3) if pop else None,
-            "priority_index": round(avg * (1 + math.log(n)), 1),
-            "suggested_funding_scheme": SCHEME_FOR_CATEGORY.get(cat_key, "Ward-level budget"),
-        })
-    out.sort(key=lambda r: r["priority_index"], reverse=True)
-    return {"method": "avg severity × (1 + ln(open complaints)); population = Census 2011",
-            "items": out[:limit]}
+    return {"method": PRIORITY_METHOD, "items": (await _priority_items(db))[:limit]}
+
+
+def _csv_cell(v):
+    """Neutralise spreadsheet formula injection: a state/category typed by a user
+    could start with = + - @ and execute when the file is opened in Excel."""
+    if isinstance(v, str) and v[:1] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + v
+    return "" if v is None else v
+
+
+@router.get("/priorities.csv")
+async def project_priorities_csv(
+    db: AsyncSession = Depends(get_db),
+    official: User = Depends(require_official),
+):
+    """Full ranked list (no top-N cut) as a CSV a planner can open in Excel."""
+    import csv
+    import io
+    from fastapi.responses import Response
+    cols = ["rank", "state", "category", "open_complaints", "avg_severity", "linked_areas_total",
+            "population_millions_2011", "complaints_per_million", "priority_index", "suggested_funding_scheme"]
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(cols)
+    for i, r in enumerate(await _priority_items(db), 1):
+        w.writerow([i] + [_csv_cell(r[c]) for c in cols[1:]])
+    w.writerow([])
+    w.writerow([_csv_cell("# Method: " + PRIORITY_METHOD + ". Triage aid, not a costed plan. Generated " +
+                          datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"))])
+    return Response(
+        content="\ufeff" + buf.getvalue(),   # BOM so Excel reads UTF-8
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="nagarvaani_priority_projects.csv"'},
+    )
