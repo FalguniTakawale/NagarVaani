@@ -30,12 +30,20 @@ export function captureLocation() {
   status.textContent = '';
 
   navigator.geolocation.getCurrentPosition(
-    pos => {
+    async pos => {
       capturedLat = pos.coords.latitude;
       capturedLng = pos.coords.longitude;
       label.textContent = '📍 Location captured';
-      status.textContent = `✓ ${capturedLat.toFixed(4)}, ${capturedLng.toFixed(4)} — will be attached to this complaint`;
-      showToast('Location captured');
+      status.textContent = `✓ ${capturedLat.toFixed(4)}, ${capturedLng.toFixed(4)} — looking up the area name…`;
+      const place = await lookupPlace(capturedLat, capturedLng);
+      if (place) {
+        applyPlace(place);
+        status.textContent = `✓ ${place.summary} — coordinates will be attached to this complaint`;
+        showToast(`Location: ${place.summary}`);
+      } else {
+        status.textContent = `✓ ${capturedLat.toFixed(4)}, ${capturedLng.toFixed(4)} attached — couldn't look up the area name, please type it above`;
+        showToast('Location captured — please type the area name');
+      }
     },
     err => {
       label.textContent = t('submit.uselocation');
@@ -45,6 +53,51 @@ export function captureLocation() {
     },
     { enableHighAccuracy: true, timeout: 10000 }
   );
+}
+
+/* Coordinates alone aren't useful to a reader (or to ward/city-scoped views), so turn
+   them into a real place name with OpenStreetMap's Nominatim reverse geocoder — the same
+   free service Near Me already uses, no key. Returns null on any failure so the user
+   just types the area instead. */
+async function lookupPlace(lat, lng) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&zoom=18&accept-language=en&lat=${lat}&lon=${lng}`);
+    if (!res.ok) return null;
+    const a = (await res.json()).address;
+    if (!a) return null;
+    const area = a.neighbourhood || a.suburb || a.quarter || a.city_district || a.residential || a.hamlet || a.village || '';
+    const city = a.city || a.town || a.municipality || a.county || a.state_district || '';
+    const parts = [a.road, area, city].filter((p, i, arr) => p && arr.indexOf(p) === i);
+    if (!parts.length) return null;
+    return { text: parts.join(', '), summary: parts.slice(-2).join(', '), city, state: a.state || '' };
+  } catch (_) { return null; }
+}
+
+/* Fill the Location box (unless the user has typed their own text) and, where the
+   form asks for it, the city/state — switching a signed-in user to "report for a
+   different city" if GPS says they're somewhere other than their registered city. */
+function applyPlace(place) {
+  const box = document.getElementById('complaint-location');
+  if (box && (!box.value.trim() || box.dataset.auto === '1')) {
+    box.value = place.text;
+    box.dataset.auto = '1';
+    if (!box.dataset.watch) { box.dataset.watch = '1'; box.addEventListener('input', () => { box.dataset.auto = ''; }); }
+  }
+  if (!place.city) return;
+  const same = (x, y) => x && y && (x.toLowerCase().includes(y.toLowerCase()) || y.toLowerCase().includes(x.toLowerCase()));
+  const known = authUser && authUser.city;
+  let switched = false;
+  if (known && !cityStateOverride && !same(known, place.city)) { overrideSubmitCityState(); switched = true; }
+  const cityInput = document.getElementById('submit-city');
+  const stateSel = document.getElementById('submit-state');
+  const visible = document.getElementById('submit-citystate-group').style.display !== 'none';
+  if (visible && cityInput && stateSel) {
+    if (place.state) {
+      const opt = [...stateSel.options].find(o => same(o.value, place.state));
+      if (opt) { stateSel.value = opt.value; window.onSubmitStateChange(opt.value); }
+    }
+    if (switched || !cityInput.value.trim() || cityInput.dataset.auto === '1') { cityInput.value = place.city; cityInput.dataset.auto = '1'; }
+  }
 }
 
 function resetLocationCapture() {

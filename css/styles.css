@@ -1198,3 +1198,11 @@ body.official-mode .page { display: none !important; }
 .speak-btn:hover { border-color: var(--saffron); background: var(--saffron-light); }
 .speak-btn.speaking { background: var(--saffron); border-color: var(--saffron-dark); color: var(--navy); }
 a.speak-btn.comment-translate { border: none; padding: 0 0 0 8px; font-size: 12px; }
+
+
+/* ── FEED PAGINATION ── */
+.feed-pager { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px 0 24px; }
+.pager-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 14px; font-size: 13px; font-weight: 600; color: var(--navy); cursor: pointer; }
+.pager-btn:hover:not([disabled]) { border-color: var(--saffron); background: var(--saffron-light); }
+.pager-btn[disabled] { opacity: 0.4; cursor: default; }
+.pager-info { font-size: 12.5px; color: var(--slate); }
