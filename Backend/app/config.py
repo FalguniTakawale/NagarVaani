@@ -36,6 +36,20 @@ class Settings(BaseSettings):
     smtp_pass: str = ""
     smtp_from: str = ""  # defaults to smtp_user
 
+    # Brevo transactional email over HTTPS (api.brevo.com) — preferred on hosts
+    # that block outbound SMTP ports (Render free tier). The sender address must
+    # be verified in Brevo (Senders, Domains & Dedicated IPs → Senders).
+    brevo_api_key: str = ""          # "xkeysib-…" from SMTP & API → API keys (NOT the SMTP key)
+    brevo_sender_email: str = ""
+    brevo_sender_name: str = "NagarVaani"
+
+    # Demo/prototype escape hatch: set REQUIRE_EMAIL_VERIFICATION=false when the
+    # host can't send email. New citizen accounts are then verified immediately
+    # and stuck unverified ones on next login. Default true = normal OTP flow.
+    # Do not disable on a real deployment; official accounts still need admin
+    # approval either way.
+    require_email_verification: bool = True
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

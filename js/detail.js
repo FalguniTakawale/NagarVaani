@@ -299,7 +299,7 @@ export async function loadComplaintDetail(id) {
     // Only the original complainant can dispute, and only once it's marked resolved —
     // the backend enforces both; this just avoids showing a button that will 403/400.
     const disputeBtn = document.getElementById('dispute-btn');
-    const isAuthor = authUser && c.author_id && authUser.id === c.author_id;
+    const isAuthor = !!c.is_author;
     disputeBtn.style.display = (c.status === 'resolved' && isAuthor) ? 'flex' : 'none';
 
     document.getElementById('govt-response-section').style.display = c.official_brief ? 'block' : 'none';

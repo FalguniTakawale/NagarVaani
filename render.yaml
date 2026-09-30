@@ -39,6 +39,10 @@ services:
       # button just stays hidden. See Backend/.env.example for setup.
       - key: GOOGLE_CLIENT_ID
         sync: false
+      - key: BREVO_API_KEY          # OTP + notification email over HTTPS (Render free blocks SMTP)
+        sync: false
+      - key: BREVO_SENDER_EMAIL     # must be a verified sender in Brevo
+        sync: false
       - key: OPENAI_API_KEY
         sync: false
       - key: CLOUDINARY_CLOUD_NAME
