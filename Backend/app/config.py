@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     smtp_pass: str = ""
     smtp_from: str = ""  # defaults to smtp_user
 
+    # Brevo transactional email over HTTPS (api.brevo.com) — preferred on hosts
+    # that block outbound SMTP ports (Render free tier). The sender address must
+    # be verified in Brevo (Senders, Domains & Dedicated IPs → Senders).
+    brevo_api_key: str = ""          # "xkeysib-…" from SMTP & API → API Keys (NOT the SMTP key)
+    brevo_sender_email: str = ""
+    brevo_sender_name: str = "NagarVaani"
+
     # Demo/prototype escape hatch: set REQUIRE_EMAIL_VERIFICATION=false when the
     # host can't send email (e.g. Render free tier blocks SMTP). New citizen
     # accounts are then verified immediately and stuck unverified ones are

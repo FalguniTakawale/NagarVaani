@@ -32,6 +32,10 @@ services:
         sync: false
       - key: REQUIRE_EMAIL_VERIFICATION   # set to false for a demo host that can't send email
         value: "true"
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        sync: false
       - key: SMTP_HOST
         sync: false
       - key: SMTP_USER

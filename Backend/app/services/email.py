@@ -1,7 +1,7 @@
 """
 Outbound email over SMTP (Gmail app-password setup in .env.example).
 
-With no SMTP_HOST/USER/PASS configured, every email is printed to the server
+With no BREVO_API_KEY/SMTP_HOST/USER/PASS configured, every email is printed to the server
 log instead — so the OTP flow can be exercised locally without an account,
 while a production deploy that forgot SMTP fails loudly in the logs rather
 than silently skipping verification.
@@ -17,8 +17,32 @@ from app.config import get_settings
 settings = get_settings()
 
 
+def _brevo_configured() -> bool:
+    return bool(settings.brevo_api_key and settings.brevo_sender_email)
+
+
 def is_configured() -> bool:
-    return bool(settings.smtp_host and settings.smtp_user and settings.smtp_pass)
+    return _brevo_configured() or bool(settings.smtp_host and settings.smtp_user and settings.smtp_pass)
+
+
+async def _send_brevo(to: str, subject: str, text: str, html: str | None) -> bool:
+    """Brevo transactional API — plain HTTPS, so it works where SMTP is blocked."""
+    import httpx
+    body = {
+        "sender": {"name": settings.brevo_sender_name or "NagarVaani", "email": settings.brevo_sender_email},
+        "to": [{"email": to}],
+        "subject": subject,
+        "textContent": text,
+    }
+    if html:
+        body["htmlContent"] = html
+    async with httpx.AsyncClient(timeout=15) as client:
+        r = await client.post("https://api.brevo.com/v3/smtp/email", json=body,
+                              headers={"api-key": settings.brevo_api_key, "accept": "application/json"})
+    if r.status_code >= 300:
+        # Body says why (e.g. "sender not valid", "unauthorized") — never includes our key.
+        raise RuntimeError(f"Brevo {r.status_code}: {r.text[:300]}")
+    return True
 
 
 def _send_sync(to: str, subject: str, text: str, html: str | None) -> None:
@@ -43,6 +67,8 @@ async def send_email(to: str, subject: str, text: str, html: str | None = None) 
         print(f"[DEV EMAIL — SMTP not configured] to={to} subject={subject!r}\n{text}\n")
         return False
     try:
+        if _brevo_configured():
+            return await _send_brevo(to, subject, text, html)
         await asyncio.to_thread(_send_sync, to, subject, text, html)
         return True
     except Exception as e:
