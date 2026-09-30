@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230F2042'/%3E%3Ccircle cx='32' cy='32' r='12' fill='%23F5A623'/%3E%3C/svg%3E">
 <title>NagarVaani — Pitch Deck</title>
 <style>
   @page { size: 1280px 720px; margin: 0; }
@@ -47,6 +49,10 @@
   code { background: rgba(0,0,0,.07); padding: 1px 6px; border-radius: 4px; font-size: .9em; }
   .dark code { background: rgba(255,255,255,.14); }
   a { color: inherit; }
+  @media screen {
+    body { display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 24px 0; }
+    .slide { box-shadow: 0 10px 40px rgba(0,0,0,.35); border-radius: 6px; flex: 0 0 auto; }
+  }
 </style>
 </head>
 <body>
@@ -60,8 +66,8 @@
     <p style="font-size:26px; margin-top:18px; color:#fff; font-weight:600;">Your Voice, Your City.</p>
     <p style="font-size:20px; margin-top:14px; max-width:600px;">A civic-intelligence layer that ranks public problems by <b style="color:var(--saffron)">how urgent they really are</b> — not by who shouts loudest.</p>
     <div style="margin-top:38px; display:flex; flex-direction:column; gap:8px; font-size:17px;">
-      <div>🌐 <b style="color:var(--saffron)">{{LIVE_URL}}</b></div>
-      <div style="color:rgba(255,255,255,.7)">Built by Falguni Takawale · MIT-licensed<br>github.com/FalguniTakawale/NagarVaani</div>
+      <div>🌐 <a href="https://nagarvaani-2i2l.onrender.com" style="color:var(--saffron); font-weight:700; text-decoration:none;">https://nagarvaani-2i2l.onrender.com</a></div>
+      <div style="color:rgba(255,255,255,.7)">Built by Falguni Takawale · MIT-licensed<br><a href="https://github.com/FalguniTakawale/NagarVaani" style="color:rgba(255,255,255,.75)">github.com/FalguniTakawale/NagarVaani</a></div>
     </div>
   </div>
   <img class="shot" src="img/landing.jpg" style="position:absolute; right:-70px; top:150px; width:600px; transform: rotate(-2deg);">
@@ -330,14 +336,25 @@
     </div>
     <div style="background:rgba(255,255,255,.08); border-radius:16px; padding:26px 28px;">
       <div style="font-size:15px; letter-spacing:1.4px; text-transform:uppercase; color:var(--saffron); font-weight:700;">Try it</div>
-      <div style="font-size:26px; font-weight:800; margin:8px 0 14px; color:#fff;">{{LIVE_URL}}</div>
-      <p style="font-size:16px;">Code &amp; docs: <b style="color:#fff">github.com/FalguniTakawale/NagarVaani</b></p>
-      <p style="font-size:16px; margin-top:6px;">Telegram: <b style="color:#fff">@NagarvaaniHackBot</b></p>
+      <div style="font-size:26px; font-weight:800; margin:8px 0 14px;"><a href="https://nagarvaani-2i2l.onrender.com" style="color:#fff; text-decoration:none;">https://nagarvaani-2i2l.onrender.com</a></div>
+      <p style="font-size:16px;">Code &amp; docs: <a href="https://github.com/FalguniTakawale/NagarVaani" style="color:#fff; font-weight:700;">github.com/FalguniTakawale/NagarVaani</a></p>
+      <p style="font-size:16px; margin-top:6px;">Telegram: <a href="https://t.me/NagarvaaniHackBot" style="color:#fff; font-weight:700;">@NagarvaaniHackBot</a></p>
       <p style="font-size:16px; margin-top:6px;">Licence: <b style="color:#fff">MIT</b> · Independent civic-tech prototype</p>
       <div style="margin-top:20px; font-size:22px; font-weight:800; color:var(--saffron);">Low votes ≠ low importance.</div>
     </div>
   </div>
 </section>
 
+<script>
+  // Screen only: shrink slides to fit narrow windows. Print/PDF is left at 1280×720.
+  (function () {
+    function fit() {
+      var z = Math.min(1, (window.innerWidth - 24) / 1280);
+      document.querySelectorAll('.slide').forEach(function (s) { s.style.zoom = z < 1 ? z : ''; });
+    }
+    window.addEventListener('resize', fit); window.addEventListener('beforeprint', function () { document.querySelectorAll('.slide').forEach(function (s) { s.style.zoom = ''; }); });
+    window.addEventListener('afterprint', fit); fit();
+  })();
+</script>
 </body>
 </html>
