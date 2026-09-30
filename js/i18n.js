@@ -133,6 +133,8 @@ export const TRANSLATIONS = {
     'stat.open': 'Open', 'stat.resolved': 'Resolved', 'stat.critical': 'Critical', 'stat.inprogress': 'In progress',
     'panel.yourcomplaints': 'Your complaints', 'panel.govtupdates': 'Recent status updates',
     'panel.noupdates': 'No status changes here yet.',
+    'speak.unsupported': "This browser can't read aloud — try Chrome or Edge", 'speak.novoice': 'No voice for this language is installed on your device',
+    'speak.fallback': 'No {asked} voice installed — reading with a {got} voice instead',
     'panel.nomine': "You haven't reported anything yet.",
     'notif.title': 'Updates on your complaints', 'notif.guest': "Sign in to see updates on your complaints.",
     'notif.empty': "No status changes on your complaints yet.",
