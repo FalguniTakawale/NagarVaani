@@ -69,9 +69,9 @@ class VoteOut(BaseModel):
 
 # ── COMMENTS ──────────────────────────────────────────────────────────────────
 class CommentCreate(BaseModel):
-    text: str
-    author_name: Optional[str] = None
-    author_area: Optional[str] = None
+    text: str = Field(..., min_length=1, max_length=2000)
+    author_name: Optional[str] = Field(None, max_length=100)
+    author_area: Optional[str] = Field(None, max_length=100)
 
 
 class CommentOut(BaseModel):
@@ -112,7 +112,7 @@ class TranslateResponse(BaseModel):
 class UserCreate(BaseModel):
     name: str
     email: EmailStr
-    password: str
+    password: str = Field(..., max_length=72)  # bcrypt limit
     role: UserRole = UserRole.citizen
     official_level: Optional[OfficialLevel] = None  # only meaningful when role=official
     state: Optional[str] = None
@@ -124,7 +124,7 @@ class UserCreate(BaseModel):
 
 class UserLogin(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(..., max_length=72)  # bcrypt limit
 
 
 class RegisterOut(BaseModel):
@@ -150,7 +150,7 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
     otp: str
-    new_password: str
+    new_password: str = Field(..., max_length=72)
 
 
 class GoogleAuthRequest(BaseModel):
