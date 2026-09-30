@@ -25,7 +25,7 @@ import { toggleChatbotPanel, sendChatbotMessage, askChatbotSuggestion } from './
 import {
   switchToOfficialMode, switchToCitizenMode, offLogout, offOpenDetail, setOfficialView,
   loadOfficialQueue, expandQueueRow, officialAction, postOfficialResponse,
-  loadHotspotMapFull, setOffMapScope, loadInvestmentFlags,
+  loadHotspotMapFull, setOffMapScope, loadInvestmentFlags, downloadPrioritiesCsv,
   loadVerificationQueue, approveOfficialApplication, rejectOfficialApplication,
 } from './official.js';
 import {
@@ -67,7 +67,7 @@ Object.assign(window, {
   submitCorruption,
   switchToOfficialMode, switchToCitizenMode, offLogout, offOpenDetail, setOfficialView,
   loadOfficialQueue, expandQueueRow, officialAction, postOfficialResponse,
-  loadHotspotMapFull, setOffMapScope, loadInvestmentFlags,
+  loadHotspotMapFull, setOffMapScope, loadInvestmentFlags, downloadPrioritiesCsv,
   loadVerificationQueue, approveOfficialApplication, rejectOfficialApplication,
   switchAuthTab, switchAuthTabByName, selectRole, selectSignupRole,
   goToStep, doSignIn, completeSignup, startOfficialSignup,

@@ -2,7 +2,7 @@
    extra buttons. Lives in #official-shell, completely outside the citizen
    page structure; switchToOfficialMode()/switchToCitizenMode() flip which
    of the two DOM trees is visible. All classes are .off-* (see styles.css). */
-import { api, authUser, logout } from './api.js';
+import { api, authUser, authToken, API_BASE, logout } from './api.js';
 import { showToast, escapeHtml, loadingPlaceholder } from './ui.js';
 import { CATEGORY_LABELS } from './feed.js';
 import { nav, openComplaint } from './nav.js';
@@ -367,6 +367,7 @@ export async function loadInvestmentFlags() {
     </div>
     <div style="margin-top:28px">
       ${sectionHeader('Data-driven project priorities', 'Unresolved demand by state and problem type, joined with Census-2011 population and mapped to the real central scheme that funds it. A triage aid — not a costed plan.')}
+      <div style="margin:-4px 0 8px"><button class="b-btn secondary" onclick="downloadPrioritiesCsv(this)">⬇ Download CSV</button></div>
       <div id="off-priorities">${loadingPlaceholder()}</div>
     </div>`;
   loadProjectPriorities();
@@ -390,6 +391,23 @@ export async function loadInvestmentFlags() {
     }).join('');
   } catch (err) {
     document.getElementById('off-rows').innerHTML = `<div class="off-empty" style="color:#DC2626">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+/* Fetch with the auth header (a plain <a href> can't send it), then save the blob. */
+export async function downloadPrioritiesCsv(btn) {
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch(API_BASE + '/stats/priorities.csv', { headers: { Authorization: 'Bearer ' + authToken } });
+    if (!res.ok) throw new Error(res.status === 403 ? 'Official access required' : `Download failed (${res.status})`);
+    const url = URL.createObjectURL(await res.blob());
+    const a = Object.assign(document.createElement('a'), { href: url, download: 'nagarvaani_priority_projects.csv' });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (err) {
+    showToast(err.message);
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
