@@ -70,3 +70,43 @@ async def download_telegram_file(file_id: str) -> bytes | None:
 
 # Old name kept as an alias — telegram.py's voice-note path already calls this.
 download_voice_file = download_telegram_file
+
+
+_SECRET_RE = None
+
+
+async def register_webhook(public_base_url: str) -> str:
+    """Point Telegram at this server's /api/telegram/webhook, so no manual
+    `setWebhook` browser/curl step is needed after each deploy or token change.
+
+    Idempotent (skips if already pointing here) and best-effort: returns a short
+    status string for the log and never raises, so a Telegram outage can't stop the
+    site from starting. The bot token is never logged."""
+    import re
+    global _SECRET_RE
+    if not is_configured():
+        return "skipped: TELEGRAM_BOT_TOKEN not set"
+    secret = settings.telegram_webhook_secret
+    if not secret:
+        return "skipped: TELEGRAM_WEBHOOK_SECRET not set (the webhook would be unauthenticated)"
+    _SECRET_RE = _SECRET_RE or re.compile(r"^[A-Za-z0-9_-]{1,256}$")
+    if not _SECRET_RE.match(secret):
+        return "skipped: TELEGRAM_WEBHOOK_SECRET may only contain letters, numbers, _ and - (Telegram's rule)"
+    base = (public_base_url or "").strip().rstrip("/")
+    if not base.startswith("https://"):
+        return "skipped: no public https URL (set FRONTEND_URL)"
+    target = f"{base}/api/telegram/webhook"
+    api = TELEGRAM_API.format(token=settings.telegram_bot_token)
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            info = (await client.get(f"{api}/getWebhookInfo")).json()
+            if not info.get("ok"):
+                return f"failed: Telegram rejected the token ({info.get('description', 'unknown error')})"
+            if info.get("result", {}).get("url") == target:
+                return f"already registered at {target}"
+            r = (await client.post(f"{api}/setWebhook", data={
+                "url": target, "secret_token": secret, "allowed_updates": '["message"]',
+            })).json()
+        return f"registered at {target}" if r.get("ok") else f"failed: {r.get('description', 'unknown error')}"
+    except Exception as e:  # noqa: BLE001
+        return f"failed: {type(e).__name__}"
