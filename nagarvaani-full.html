@@ -1649,6 +1649,13 @@
           <span class="text-count"><span id="complaint-count">0</span> / 5000</span>
         </div>
         <div class="voice-row">
+          <select id="mic-lang" title="Language you will speak — helps the transcription" aria-label="Voice language" onchange="this.dataset.touched='1'" style="border:1px solid var(--border);border-radius:var(--radius);padding:7px 8px;font-size:12.5px;background:var(--surface2);color:var(--text-soft);">
+            <option value="auto">🌐 Auto-detect</option>
+            <option value="hi">हिंदी</option>
+            <option value="mr">मराठी</option>
+            <option value="ta">தமிழ்</option>
+            <option value="en">English</option>
+          </select>
           <button class="mic-btn" id="mic-btn" onclick="toggleRecording()">
             <span class="mic-dot"></span>
             <span id="mic-btn-label" data-i18n="submit.mic">🎤 Or record a voice note instead</span>

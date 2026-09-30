@@ -219,7 +219,10 @@ async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db))
         if audio_bytes is None:
             await send_message(chat_id, "Couldn't download that voice note. Please try again.")
             return {"ok": True}
-        stt_result = await transcribe_audio(audio_bytes, filename="voice.ogg")
+        stt_result = await transcribe_audio(
+            audio_bytes, filename="voice.ogg",
+            language=getattr(user, "preferred_language", None) if user else None,
+        )
         text = stt_result.get("text", "")
         if not text:
             await send_message(
