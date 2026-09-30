@@ -1,60 +1,53 @@
-# NagarVaani — Your Voice, Your City
+# NagarVaani — Your Voice, Your City · नगरवाणी
 
-A civic-intelligence layer between citizens and government. Citizens report
-infrastructure problems in any language — by web form, voice note, or Telegram.
-An LLM (Gemini by default, Claude optional) scores every complaint on **severity, season, population density and
-cross-district patterns — not vote count** — so a village of fifty gets heard on
-merit. Officials get AI-synthesised briefs, a live hotspot map, and a queue
-sorted by what actually matters.
+**Live prototype:** https://nagarvaani-2i2l.onrender.com  
+**Built for:** GDG India / Hack2Skill — *Build with AI: Code for Communities*, Track 1 (AI for Digital Public Infrastructure & Governance, BRICS theme: Innovation)
 
-> Low votes ≠ low importance. A monsoon drain with 3 votes outranks a
-> dry-season pothole with 104.
+NagarVaani is a civic-intelligence layer between citizens and government. People report
+infrastructure problems in their own language — by web form, **voice note** or **Telegram** — and
+every report is ranked on **how dangerous and urgent the problem really is** (safety risk, season,
+people affected, cross-area pattern), **not on vote count**. Officials get a jurisdiction-scoped
+queue, AI-written briefs, a live hotspot map and a data-driven list of where demand is highest.
+Votes and comments do a different job: **accountability and transparency**.
 
-Built for **Build with AI: Code for Communities** (H2S) — Track 1, AI for Digital
-Public Infrastructure & Governance.
+> **Low votes ≠ low importance.** In our demo data a village handpump with **1 vote** scores
+> **98.7**; a pothole-ridden road with **104 votes** scores **40.6**.
 
-**Read next:** [docs/PROJECT_REPORT.md](docs/PROJECT_REPORT.md) (also as
-[PDF](docs/NagarVaani_Project_Report.pdf)) — what the app does, what the ⚑ Flag
-does, what L1–L5 mean, an honest real-vs-demo-vs-stub audit, GDG challenge fit,
-and the security review.
+## Documentation
 
-Licensed under [MIT](LICENSE) — see [PRIVACY.md](PRIVACY.md) for what data the
-platform actually collects and where it goes.
+| Read | What's in it |
+|---|---|
+| [`docs/PROJECT_REPORT.md`](docs/PROJECT_REPORT.md) · [PDF](docs/NagarVaani_Project_Report.pdf) | The full project document: problem, insight, solution, scoring, what's real vs stub vs demo, testing & security, challenge fit, expansion, roadmap |
+| [`docs/NagarVaani_Pitch_Deck.pdf`](docs/NagarVaani_Pitch_Deck.pdf) | The same story as a slide deck |
+| [`PRIVACY.md`](PRIVACY.md) | What data is collected and where it goes |
+| In the app: **How scoring works (L1–L5)** | The scoring explained in plain language for citizens |
 
----
+## What it does
 
-## Known limitations & future work
+**Citizens** — report by text, mic (Hindi / Marathi / Tamil / English, Hinglish understood) or Telegram, with photos and GPS (the area name is looked up automatically) · anonymous or signed in · track by ID · feeds: Home, Trending (nationwide, paginated), Near Me (radius, heatmap, email alerts), My complaints, My votes · vote, comment, "same issue in my area" · see similar issues across the whole city and "see also across the country", with resolved/unresolved counts · translate any complaint or comment · 🔊 read-aloud · share · ⚑ flag abuse · dispute a false "resolved" · separate login-gated corruption channel.
 
-This is a hackathon-stage prototype for **India specifically**, not the full
-BRICS-wide platform the challenge statement describes. Being direct about the
-gap rather than quietly building only the easy 80%:
+**Officials** — admin-approved accounts (work e-mail only) at ward / city / state / central level · severity-ranked queue · hotspot map · mark in-progress / resolved (only inside their own jurisdiction) · investment flags · **project priorities** (unresolved demand by state and problem type, joined with Census-2011 population and mapped to the real central scheme that would fund it) with CSV download · admin verification queue.
 
-- **Country scope**: every government scheme, ministry link, state/district
-  list, and language is India-only. There's no country concept anywhere in
-  the data model. Extending to another BRICS nation means adding its own
-  schemes/ministries/languages, not re-architecting the platform — the
-  scoring engine, translation pipeline, and dashboards are already
-  country-agnostic — but that data layer doesn't exist yet for anyone but India.
-- **No external dataset ingestion**: the priority scorer's population factor
-  is `population=10000`, hardcoded at the call site (see `complaints.py`) —
-  there's no real census/demographic dataset behind it. Infrastructure-index
-  data and public investment-plan data aren't ingested at all. The platform
-  surfaces real complaint-density hotspots (that part is genuine), but it
-  doesn't yet combine that with external government planning data the way
-  the challenge asks.
-- **No automated project recommendations**: officials can flag a complaint
-  as an infrastructure gap, but there's no model generating a specific
-  "build X here, costing Y" recommendation from data. An earlier version of
-  this prototype showed a fabricated ₹-cost figure for this; it was removed
-  on purpose rather than replaced with another invented number, and hasn't
-  been replaced with a real one yet.
+**Platform** — e-mail OTP sign-up and password reset · optional Google sign-in · rate limits and security headers · Telegram webhook that registers itself on deploy · e-mail through Brevo (HTTPS) with SMTP fallback · optional features switch on when their key is present and otherwise fail with a clear message.
 
-What's already real and working: multilingual voice/text/Telegram intake,
-AI severity scoring (not vote-based), cross-district pattern detection,
-two-way translation between any complaint's language and the viewer's
-selected language, jurisdiction-scoped official dashboards with admin-gated
-account verification, and a real (if scoped-down) government-scheme/ministry
-directory for India.
+## Tech stack
+
+Python · FastAPI · SQLAlchemy (async) · PostgreSQL (Neon) / SQLite · vanilla JavaScript ES modules · Leaflet + OpenStreetMap · Google Gemini (Claude switchable in one line) · Whisper speech-to-text (Hugging Face / Groq / OpenAI) · Web Speech API (read-aloud) · Cloudinary · Telegram Bot API · Brevo · Render.
+
+## Real vs stub vs demo (short version)
+
+- **Real, end to end:** intake, AI pipeline, L1–L5 scoring, votes/comments/links, status workflow with jurisdiction enforcement, notifications, auth and official approval, hotspot map and statistics, priorities + CSV, translation, read-aloud.
+- **Stub / partial (by design):** the population factor is a default of 10,000 (the per-area table isn't wired in); **no infrastructure-index or investment-plan data**; **no project costs** (none are invented); no moderation *screen* for flags (API only); volunteer forms just send e-mail; "Our Impact" trees/recycling tiles say "Coming soon".
+- **Demo content (labelled):** `seed_data.py` users and complaints, "Supporters" cards on Get Involved, example cards before live data loads.
+- **Not built:** WhatsApp / SMS intake, countries other than India, installable/offline mode.
+
+Full detail and the reasoning are in [`docs/PROJECT_REPORT.md`](docs/PROJECT_REPORT.md).
+
+## Expansion path
+
+Real district-level population + one infrastructure dataset → "investment gap" view · a `country` field and a data pack per BRICS nation · WhatsApp/SMS channels · costed recommendations · impact dashboard (time-to-resolve, dispute rate, neglect index) · moderation UI and duplicate merging · open-data export for Digital-Public-Good status.
+
+Licensed under [MIT](LICENSE).
 
 ---
 
@@ -137,19 +130,22 @@ All read from `Backend/.env` (see `.env.example`).
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | **Yes** | Claude — filter, classify, brief, NLP, translation. Without it every AI call fails open (complaint accepted, category `other`). |
-| `DATABASE_URL` | Yes | `sqlite+aiosqlite:///./nagarvaani.db` for local, or a Postgres URL. `postgres://` / `postgresql://` are rewritten to the asyncpg driver automatically. |
+| `GEMINI_API_KEY` | **Yes** for AI | Default language model (Gemini, free tier) — filter, classify, brief, place detection, translation, chatbot. Without it every AI step fails open: the complaint is still accepted (category `other`) and translation returns a clear error. |
+| `ANTHROPIC_API_KEY` | No | Only if you switch `_PROVIDER` to `"anthropic"` in `ai_engine.py` to use Claude instead. |
+| `DATABASE_URL` | Yes | `sqlite+aiosqlite:///./nagarvaani.db` locally, or a Postgres URL (Neon etc.). `postgres://` / `postgresql://` are rewritten to the asyncpg driver; `sslmode` / `channel_binding` query parameters are handled. |
 | `JWT_SECRET` | Yes in prod | Signs login tokens. The default `dev-secret-change-me` is refused unless `ENVIRONMENT=development`. |
-| `ENVIRONMENT` | No (`development`) | `development` = open CORS, default JWT allowed, unsecured Telegram webhook allowed. Anything else = locked down. |
-| `FRONTEND_URL` | Yes in prod | The only CORS origin allowed outside development. Comma-separate for several. |
-| `OPENAI_API_KEY` | No | Whisper speech-to-text for voice notes (web mic + Telegram). Claude has no audio input. |
+| `ENVIRONMENT` | No (`development`) | `development` = open CORS, default JWT allowed, unsecured Telegram webhook allowed, no webhook auto-registration. Anything else = locked down. |
+| `FRONTEND_URL` | Yes in prod | The only CORS origin allowed outside development (falls back to Render's `RENDER_EXTERNAL_URL`). |
+| `HUGGINGFACE_API_KEY` · `GROQ_API_KEY` · `OPENAI_API_KEY` | For voice notes | Whisper speech-to-text. The first key found is used (Groq → Hugging Face → OpenAI); `STT_PROVIDER` can force one. The mic has a language picker (Hindi / Marathi / Tamil / English / auto) that is passed to the model as a hint. |
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | No | Complaint photo / 360° uploads. Without them uploads return a clear error and the complaint submits without images. |
-| `TELEGRAM_BOT_TOKEN` | No | From @BotFather. Enables the `/api/telegram/webhook` channel. |
-| `TELEGRAM_WEBHOOK_SECRET` | Prod if bot used | Random string; pass the same value as `secret_token` to `setWebhook`. Requests without it get a bare 403. |
-| `BREVO_API_KEY` / `BREVO_SENDER_EMAIL` | No (recommended on Render) | Brevo transactional email over HTTPS for OTP + notifications (API key `xkeysib-…`, sender verified in Brevo). Takes precedence over SMTP. |
-| `REQUIRE_EMAIL_VERIFICATION` | No (`true`) | Set `false` only for a demo host that cannot send email: new citizen accounts are verified immediately. Never on a real deployment. |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | No | Gmail SMTP for signup OTP + welcome email. Without them the OTP is printed to the server log instead. |
-| `GOOGLE_CLIENT_ID` | No | "Continue with Google" sign-in. Without it, the button is hidden and password sign-in works as before. |
+| `TELEGRAM_BOT_TOKEN` | No | From @BotFather. Enables the Telegram channel. |
+| `TELEGRAM_WEBHOOK_SECRET` | Prod if bot used | Any string of letters, numbers, `_` and `-`. The app registers the webhook with Telegram itself at startup (production only) and rejects requests without this secret. |
+| `BREVO_API_KEY` / `BREVO_SENDER_EMAIL` | No (recommended on Render) | Brevo transactional e-mail over HTTPS for OTP + notifications. The key is the `xkeysib-…` **API key** (not the SMTP key) and the sender must be verified in Brevo. Takes precedence over SMTP. |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | No | SMTP fallback (Render's free tier blocks the usual SMTP ports). With no e-mail provider at all, the OTP is printed to the server log. |
+| `REQUIRE_EMAIL_VERIFICATION` | No (`true`) | Set `false` only on a demo host that cannot send e-mail: new citizen accounts are verified immediately. Never on a real deployment. |
+| `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD` | No | Creates/resets one approved admin at startup (hosts with no shell). Remove both after testing. |
+| `GOOGLE_CLIENT_ID` | No | "Continue with Google". Public by design; without it the button is hidden. |
+
 
 ---
 
@@ -166,7 +162,7 @@ All read from `Backend/.env` (see `.env.example`).
  ┌────────────────────────── FastAPI (Backend/) ─┴───────────────────────────┐
  │  routers/   auth · complaints · stats · media · telegram                  │
  │                                                                           │
- │  services/ai_engine.py   ── Claude ──►  0 Whisper STT (only if audio)     │
+ │  services/ai_engine.py   ── LLM ─────►  0 Whisper STT (only if audio)     │
  │     per submission:                     1 Filter   reject political/     │
  │                                                    communal framing       │
  │                                         2 Classify category · severity · │
@@ -183,15 +179,16 @@ All read from `Backend/.env` (see `.env.example`).
    PostgreSQL (Render)        Cloudinary            OpenAI Whisper
    SQLite (local)           images / 360°           voice → text
 
-   Frontend: nagarvaani-full.html + css/ + js/ (10 ES modules, no framework),
+   Frontend: nagarvaani-full.html + css/ + js/ (18 ES modules, no framework),
    served by the same FastAPI process at / — Leaflet + OpenStreetMap for maps.
 ```
 
 **Priority score** (`score_complaint`, `ai_engine.py`):
-`(L1 safety + L3 category weight + L4 log-population + L5 linked-area bonus) × L2 seasonal multiplier`,
-floored at 90 for safety risks, then `× (1 + 0.1·log10(votes+1))`. Votes are the
-weakest signal by construction — they can reorder two similar issues but never
-lift a non-critical one above a critical one.
+`severity = L1 safety (+40) + L3 category weight + L4 log-population + L5 linked-area bonus`,
+then `score = min(100, severity × L2 seasonal multiplier)` (the season is fixed when first scored).
+Safety risks instead score in a **90–99 band ordered by severity**, with votes adding at most +1;
+everything else gets a gentle `× (1 + 0.1·log10(votes+1))` nudge. Votes are the weakest signal by
+construction — they can reorder similar issues but never lift a non-critical one above a critical one.
 
 ---
 
@@ -249,7 +246,7 @@ All under `/api`. Interactive docs at `/docs` when the server is running.
 | `GET` | `/complaints/{id}` | — | Full detail: breakdown, images, comments, linked areas, status log |
 | `GET` | `/complaints/{id}/related` | — | Similar-in-area + cross-pattern complaints |
 | `POST` | `/complaints/{id}/vote` | citizen | Vote once; solidarity if from another ward. Re-scores. |
-| `POST` | `/complaints/{id}/comments` | optional | Comment; Claude scans for place names and auto-links them |
+| `POST` | `/complaints/{id}/comments` | optional | Comment; the AI scans for place names and auto-links them |
 | `POST` | `/complaints/{id}/link-area` | optional | "Same issue in my area" — feeds the L5 bonus, re-scores |
 | `PATCH` | `/complaints/{id}/status` | official | `open \| in_progress \| resolved \| rejected`, logged |
 | `POST` | `/complaints/{id}/dispute` | author | Reopen a *resolved* complaint as `disputed` |
@@ -318,7 +315,7 @@ the environment variables from the table above with `ENVIRONMENT=production`.
 ```
 nagarvaani-full.html   all pages (citizen app + official portal)
 css/styles.css
-js/                    api · nav · feed · detail · submit · nearme · corruption · official · govt · auth · voice · i18n · ui · main
+js/                    api · nav · feed · detail · submit · nearme · corruption · official · govt · auth · voice · speak · chatbot · getinvolved · forofficials · i18n · ui · main
 Backend/
   main.py              app, CORS, startup guard, serves the frontend
   setup_db.py          create tables (SQLite or Postgres)

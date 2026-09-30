@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NagarVaani — Pitch Deck</title>
+<style>
+  @page { size: 1280px 720px; margin: 0; }
+  :root { --navy:#0F2042; --navy2:#1a3260; --saffron:#F5A623; --saffron-d:#C8841A; --bg:#F0EFE9; --ink:#1C1C1E; --soft:#44474D; --slate:#64748B; --line:#E2E0D8;
+          --crit:#DC2626; --warn:#D97706; --ok:#16A34A; --info:#2563EB; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #888; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: 'Inter','Segoe UI',Helvetica,Arial,sans-serif; color: var(--ink); }
+  .slide { width: 1280px; height: 720px; position: relative; overflow: hidden; page-break-after: always; break-after: page; background: var(--bg); padding: 46px 64px 40px; }
+  .slide.dark { background: var(--navy); color: #fff; }
+  .slide::after { content: attr(data-n); position: absolute; right: 28px; bottom: 18px; font-size: 12px; color: var(--slate); }
+  .slide.dark::after { color: rgba(255,255,255,.45); }
+  .brand { position: absolute; left: 64px; bottom: 18px; font-size: 12px; font-weight: 700; color: var(--slate); letter-spacing: .3px; }
+  .brand i { display:inline-block; width:8px; height:8px; border-radius:50%; background: var(--saffron); margin-right:6px; }
+  .dark .brand { color: rgba(255,255,255,.55); }
+  .kicker { font-size: 13px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; color: var(--saffron-d); margin-bottom: 8px; }
+  .dark .kicker { color: var(--saffron); }
+  h1 { font-size: 58px; line-height: 1.04; letter-spacing: -1.2px; }
+  h2 { font-size: 38px; line-height: 1.12; letter-spacing: -.6px; color: var(--navy); margin-bottom: 22px; }
+  .dark h2 { color: #fff; }
+  h3 { font-size: 19px; color: var(--navy); margin-bottom: 6px; }
+  p, li { font-size: 18px; line-height: 1.5; color: var(--soft); }
+  .dark p, .dark li { color: rgba(255,255,255,.82); }
+  .grid { display: grid; gap: 20px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; }
+  .card h3 { margin-bottom: 4px; }
+  .card p, .card li { font-size: 15.5px; line-height: 1.45; }
+  .pill { display:inline-block; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+  .p-ok { background:#DCFCE7; color:#166534; } .p-warn { background:#FEF3C7; color:#92400E; } .p-demo { background:#E0E7FF; color:#3730A3; } .p-no { background:#FEE2E2; color:#991B1B; }
+  .shot { border-radius: 10px; box-shadow: 0 10px 30px rgba(15,32,66,.22); border: 1px solid rgba(15,32,66,.15); display: block; }
+  .bar { height: 38px; border-radius: 6px; display:flex; align-items:center; padding-left:10px; font-size:14px; font-weight:700; color:#fff; }
+  table { border-collapse: collapse; width: 100%; }
+  th { text-align: left; font-size: 13.5px; letter-spacing: .6px; text-transform: uppercase; color: #fff; background: var(--navy); padding: 11px 14px; }
+  td { font-size: 16.5px; padding: 13px 14px; border-bottom: 1px solid var(--line); vertical-align: top; background: #fff; color: var(--soft); }
+  td b { color: var(--navy); }
+  ul { padding-left: 22px; } li { margin-bottom: 6px; }
+  .num { width: 34px; height: 34px; border-radius: 50%; background: var(--navy); color:#fff; display:flex; align-items:center; justify-content:center; font-weight: 800; font-size: 16px; flex: 0 0 auto; }
+  .step { background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px 16px; text-align:center; position:relative; }
+  .step .ico { font-size: 34px; margin-bottom: 6px; }
+  .step h3 { font-size: 17px; }
+  .step p { font-size: 13.5px; line-height: 1.4; }
+  .arrow { position:absolute; right:-17px; top:50%; transform:translateY(-50%); font-size:22px; color: var(--saffron-d); z-index:2; }
+  code { background: rgba(0,0,0,.07); padding: 1px 6px; border-radius: 4px; font-size: .9em; }
+  .dark code { background: rgba(255,255,255,.14); }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+
+<!-- 1 · TITLE -->
+<section class="slide dark" data-n="1" style="padding:0;">
+  <div style="position:absolute; inset:0; background: radial-gradient(1100px 600px at 82% 40%, #22407a 0%, rgba(15,32,66,0) 60%);"></div>
+  <div style="position:absolute; left:70px; top:92px; width:560px;">
+    <div class="kicker">Build with AI: Code for Communities · GDG India</div>
+    <h1>NagarVaani<br><span style="color:var(--saffron)">नगरवाणी</span></h1>
+    <p style="font-size:26px; margin-top:18px; color:#fff; font-weight:600;">Your Voice, Your City.</p>
+    <p style="font-size:20px; margin-top:14px; max-width:600px;">A civic-intelligence layer that ranks public problems by <b style="color:var(--saffron)">how urgent they really are</b> — not by who shouts loudest.</p>
+    <div style="margin-top:38px; display:flex; flex-direction:column; gap:8px; font-size:17px;">
+      <div>🌐 <b style="color:var(--saffron)">{{LIVE_URL}}</b></div>
+      <div style="color:rgba(255,255,255,.7)">Built by Falguni Takawale · MIT-licensed<br>github.com/FalguniTakawale/NagarVaani</div>
+    </div>
+  </div>
+  <img class="shot" src="img/landing.jpg" style="position:absolute; right:-70px; top:150px; width:600px; transform: rotate(-2deg);">
+</section>
+
+<!-- 2 · PROBLEM -->
+<section class="slide" data-n="2"><div class="brand"><i></i>NagarVaani</div>
+  <div class="kicker">The problem</div>
+  <h2>Citizens speak. Governments can't hear it in one place.</h2>
+  <div class="grid" style="grid-template-columns: repeat(3,1fr); margin-top: 30px;">
+    <div class="card" style="min-height:330px;"><div style="font-size:46px">🧩</div><h3 style="font-size:23px">Fragmented</h3><p style="font-size:18px;">Requests are scattered across helplines, letters, WhatsApp groups, social media and separate portals — nobody sees the whole picture.</p></div>
+    <div class="card" style="min-height:330px;"><div style="font-size:46px">📢</div><h3 style="font-size:23px">The loudest wins</h3><p style="font-size:18px;">Ranking by votes, recency or city size rewards big cities and busy audiences — and buries villages, minority languages and problems people have stopped hoping will be fixed.</p></div>
+    <div class="card" style="min-height:330px;"><div style="font-size:46px">📏</div><h3 style="font-size:23px">Nothing is measured</h3><p style="font-size:18px;">Spending drifts away from real need, infrastructure gaps stay open, and there is no way to tell whether an initiative actually changed anything.</p></div>
+  </div>
+  <p style="margin-top:38px; font-size:23px; color:var(--navy); font-weight:700;">The challenge: a scalable, multilingual AI platform that turns citizen requests into priorities policymakers can act on.</p>
+</section>
+
+<!-- 3 · INSIGHT -->
+<section class="slide dark" data-n="3"><div class="brand"><i></i>NagarVaani</div>
+  <div class="kicker">Our insight</div>
+  <h2 style="font-size:54px; margin-bottom:10px;">Low votes ≠ low importance.</h2>
+  <p style="font-size:20px; max-width:900px;">Urgency is a property of the <b style="color:var(--saffron)">problem</b>, not of its audience. A village with one contaminated handpump must outrank a busy road with a hundred upvotes about potholes.</p>
+  <div class="grid" style="grid-template-columns: 1fr 1fr; gap:44px; margin-top:60px;">
+    <div>
+      <div style="font-size:14px; color:rgba(255,255,255,.6); margin-bottom:10px; text-transform:uppercase; letter-spacing:1px;">Priority score (0–100) · from our real scoring code, demo data</div>
+      <div style="margin-bottom:14px;"><div style="font-size:17px; margin-bottom:6px;">🚰 Village handpump, discoloured water · <b>1 vote</b></div><div class="bar" style="width:98.7%; background:var(--crit); font-size:18px;">98.7</div></div>
+      <div style="margin-bottom:14px;"><div style="font-size:17px; margin-bottom:6px;">🚧 Potholes on a busy road · <b>104 votes</b></div><div class="bar" style="width:40.6%; background:var(--warn); font-size:18px;">40.6</div></div>
+      <div style="font-size:14px; color:rgba(255,255,255,.65); margin-top:8px;">Votes can't outrank danger — they add a small, bounded nudge.</div>
+    </div>
+    <div>
+      <div class="grid" style="gap:20px;">
+        <div style="display:flex; gap:14px; align-items:flex-start;"><div class="num" style="background:var(--saffron); color:var(--navy);">1</div><p><b style="color:#fff">Urgency ≠ audience.</b> Whether water is entering homes doesn't depend on who saw the post.</p></div>
+        <div style="display:flex; gap:14px; align-items:flex-start;"><div class="num" style="background:var(--saffron); color:var(--navy);">2</div><p><b style="color:#fff">Problems repeat.</b> One blocked drain is often one drain line across five wards — fix it once.</p></div>
+        <div style="display:flex; gap:14px; align-items:flex-start;"><div class="num" style="background:var(--saffron); color:var(--navy);">3</div><p><b style="color:#fff">Votes serve accountability,</b> not triage — they show attention and whether issues ever get resolved.</p></div>
+        <div style="display:flex; gap:14px; align-items:flex-start;"><div class="num" style="background:var(--saffron); color:var(--navy);">4</div><p><b style="color:#fff">Let people speak</b> — in their own language, by voice or chat.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · SOLUTION -->
+<section class="slide" data-n="4"><div class="brand"><i></i>NagarVaani</div>
+  <div class="kicker">The solution</div>
+  <h2>From a spoken complaint to a ranked action — in five steps.</h2>
+  <div class="grid" style="grid-template-columns: repeat(5,1fr); gap:30px; margin-top:26px;">
+    <div class="step"><div class="ico">🎙️</div><h3>1 · Intake</h3><p>Web form, <b>voice note</b> or <b>Telegram</b>. Hindi, Marathi, Tamil, English — even Hindi typed in English letters.</p><span class="arrow">›</span></div>
+    <div class="step"><div class="ico">🛡️</div><h3>2 · Filter</h3><p>AI rejects political or communal framing and suggests a neutral rewording.</p><span class="arrow">›</span></div>
+    <div class="step"><div class="ico">🏷️</div><h3>3 · Classify</h3><p>AI reads category, language, location and "is someone likely to be hurt soon?" and translates to English.</p><span class="arrow">›</span></div>
+    <div class="step" style="border:2px solid var(--saffron);"><div class="ico">🧮</div><h3>4 · Score</h3><p><b>Plain arithmetic, no AI.</b> L1–L5 gives a 0–100 priority you can explain line by line.</p><span class="arrow">›</span></div>
+    <div class="step"><div class="ico">✅</div><h3>5 · Act</h3><p>Ranked queue, AI brief, map. Status updates reach citizens and voters; a false "resolved" can be disputed.</p></div>
+  </div>
+  <div class="grid" style="grid-template-columns: 1fr 1fr 1fr; margin-top:34px;">
+    <div class="card"><h3>AI reads. Maths ranks.</h3><p>The language model never decides who gets help first — that stays transparent and auditable.</p></div>
+    <div class="card"><h3>Fails open, not closed</h3><p>If the AI service is down, complaints are still accepted; nothing is lost.</p></div>
+    <div class="card"><h3>Provider-agnostic</h3><p>Gemini by default, Claude in one line; Whisper via Hugging Face, Groq or OpenAI.</p></div>
+  </div>
+</section>
+
+<!-- 5 · SCORING -->
+<section class="slide" data-n="5"><div class="brand"><i></i>NagarVaani</div>
+  <div class="kicker">The scoring system</div>
+  <h2>L1 – L5: priority you can read.</h2>
+  <div style="display:grid; grid-template-columns: 560px 1fr; gap:36px; align-items:start;">
+    <div class="grid" style="gap:9px;">
+      <div class="card" style="padding:11px 16px; border-left:5px solid var(--crit);"><b style="color:var(--navy)">L1 Safety</b> — could someone be hurt in days? <span class="pill p-no">90–99 band</span></div>
+      <div class="card" style="padding:11px 16px; border-left:5px solid var(--warn);"><b style="color:var(--navy)">L2 Season</b> — monsoon drains, summer water &amp; power <span class="pill p-warn">×1.0–2.0</span></div>
+      <div class="card" style="padding:11px 16px; border-left:5px solid var(--navy);"><b style="color:var(--navy)">L3 Type</b> — water 28 · drainage 26 · electricity 22 … <span class="pill p-demo">+10–28</span></div>
+      <div class="card" style="padding:11px 16px; border-left:5px solid var(--info);"><b style="color:var(--navy)">L4 People</b> — log-scaled population <span class="pill p-demo">up to +15</span></div>
+      <div class="card" style="padding:11px 16px; border-left:5px solid var(--ok);"><b style="color:var(--navy)">L5 Pattern</b> — same issue in other areas <span class="pill p-ok">+5 each, max +20</span></div>
+      <div class="card" style="padding:11px 16px; border-left:5px solid #94A3B8;"><b style="color:var(--navy)">Votes</b> — a gentle, bounded nudge <span class="pill p-demo">≤ +1 on safety</span></div>
+      <div style="background:var(--navy); color:#fff; border-radius:12px; padding:14px 18px; font-size:15px; line-height:1.55;"><b style="color:var(--saffron)">score</b> = min(100, (L1 + L3 + L4 + L5) × L2)<br>safety risks → 90–99 by severity · then the vote nudge<br><span style="opacity:.75">Season is fixed when first scored — later votes can't change it.</span></div>
+    </div>
+    <div>
+      <img class="shot" src="img/detail.jpg" style="width:100%;">
+      <p style="font-size:14px; margin-top:10px;">Every complaint shows its own <b>"Why this scores …"</b> breakdown — and a plain-language <i>How scoring works</i> page explains L1–L5 to citizens.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · ACCOUNTABILITY -->
+<section class="slide" data-n="6"><div class="brand"><i></i>NagarVaani</div>
+  <div class="kicker">What votes and comments are for</div>
+  <h2>Accountability, not triage.</h2>
+  <div style="display:grid; grid-template-columns: 1fr 560px; gap:36px; align-items:start;">
+    <div class="grid" style="gap:14px;">
+      <div class="card"><h3>🏙️ Similar issues across the whole city</h3><p>Not only your ward — each with its status — so one locality's problem can be fixed together with the same problem elsewhere in the city.</p></div>
+      <div class="card"><h3>🇮🇳 "See also across the country"</h3><p>The same problem type in other cities: a pattern visible nationally, not just locally.</p></div>
+      <div class="card"><h3>📊 Resolution counts</h3><p><i>"In Pune: 4 reports of this kind — 1 resolved, 3 still unresolved."</i> Public proof of what gets fixed.</p></div>
+      <div class="card"><h3>📬 Voters are told when it's "resolved"</h3><p>…and can say if it isn't. The original reporter can <b>dispute</b> a false "resolved".</p></div>
+    </div>
+    <div>
+      <img class="shot" src="img/detail_thread.jpg" style="width:100%;">
+      <p style="font-size:14px; margin-top:10px;">Comment thread with an official reply, automatic place detection ("Kothrud" auto-linked), translation and 🔊 read-aloud.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · RANKING IN ACTION -->
+<section class="slide" data-n="7"><div class="brand"><i></i>NagarVaani</div>
+  <div class="kicker">In action</div>
+  <h2>Citizens see the nation. Officials see their jurisdiction.</h2>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:28px;">
+    <div><img class="shot" src="img/trending.jpg" style="width:100%; height:330px; object-fit:cover; object-position: top;"><h3 style="margin-top:12px;">Nationwide issues</h3><p style="font-size:15px;">Ranked by priority, with solidarity voting from outside the area. Paginated, filterable by area.</p></div>
+    <div><img class="shot" src="img/official_queue.jpg" style="width:100%; height:330px; object-fit:cover; object-position: top;"><h3 style="margin-top:12px;">Official's queue</h3><p style="font-size:15px;">Only their ward, city or state — severity-ranked. <i>"Votes don't reorder this list."</i></p></div>
+  </div>
+</section>
+
+<!-- 8 · OFFICIALS -->
+<section class="slide" data-n="8"><div class="brand"><i></i>NagarVaani</div>
+  <div class="kicker">For policymakers</div>
+  <h2>Where demand is highest — and which scheme funds it.</h2>
+  <div style="display:grid; grid-template-columns: 1fr 520px; gap:32px; align-items:start;">
+    <div>
+      <img class="shot" src="img/official_priorities.jpg" style="width:100%;">
+    </div>
+    <div class="grid" style="gap:12px;">
+      <div class="card"><h3>Project priorities</h3><p>Unresolved demand by <b>state × problem type</b>, joined with <b>Census-2011 population</b>, mapped to the <b>real central scheme</b> (AMRUT 2.0, Jal Jeevan Mission, PMGSY…).</p></div>
+      <div class="card"><h3>Honest by design</h3><p>A triage index — <b>not a costed plan</b>. We removed an early made-up ₹ figure rather than replace it with another.</p></div>
+      <div class="card"><h3>Take it away</h3><p>One-click <b>CSV</b> download, live hotspot map, investment flags, admin-approved officials.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · DIFFERENT -->
+<section class="slide" data-n="9"><div class="brand"><i></i>NagarVaani</div>
+  <div class="kicker">What makes it different</div>
+  <h2>Not another complaint box.</h2>
+  <table>
+    <tr><th style="width:26%"></th><th style="width:34%">Typical public-complaint tools</th><th>NagarVaani</th></tr>
+    <tr><td><b>Ranking</b></td><td>Votes, recency, city size</td><td><b>Severity × season × people × pattern</b>; votes a small bounded signal</td></tr>
+    <tr><td><b>Language</b></td><td>One language, typed</td><td>Voice + text, <b>Hindi · Marathi · Tamil · English</b>, Hinglish, two-way translation, read-aloud</td></tr>
+    <tr><td><b>The AI</b></td><td>A black-box score</td><td><b>Explainable arithmetic</b> — AI only reads and classifies</td></tr>
+    <tr><td><b>Follow-through</b></td><td>Complaint disappears into an inbox</td><td>Jurisdiction queue · status log · <b>dispute a false "resolved"</b> · voter notifications</td></tr>
+    <tr><td><b>Corruption</b></td><td>Mixed in with potholes</td><td>Separate, <b>login-gated</b> channel — never in public feeds</td></tr>
+    <tr><td><b>Openness</b></td><td>Closed</td><td><b>MIT licence</b>, swappable AI/speech providers, CSV export</td></tr>
+  </table>
+  <p style="font-size:13px; margin-top:10px; color:var(--slate);">Left column describes common patterns in complaint portals generally, not any single product.</p>
+</section>
+
+<!-- 10 · WHAT WE BUILT -->
+<section class="slide" data-n="10"><div class="brand"><i></i>NagarVaani</div>
+  <div class="kicker">What we built</div>
+  <h2>A working platform, not a mock-up.</h2>
+  <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 230px; gap:18px; align-items:start;">
+    <div class="card"><h3>👥 Citizens</h3><ul style="font-size:15px;"><li>Report by text, mic, Telegram</li><li>Photos, 360°, GPS → area name</li><li>Anonymous or signed in</li><li>Home · Trending · Near Me · Track</li><li>Vote · comment · "same issue"</li><li>Translate · 🔊 read-aloud · share</li><li>Flag abuse · dispute resolution</li></ul></div>
+    <div class="card"><h3>🏛️ Officials</h3><ul style="font-size:15px;"><li>Admin-approved, work e-mail</li><li>Ward · city · state · central</li><li>Ranked queue &amp; hotspot map</li><li>Status changes inside jurisdiction</li><li>Investment flags</li><li>Project priorities + CSV</li><li>Verification queue (admin)</li></ul></div>
+    <div class="card"><h3>⚙️ Platform</h3><ul style="font-size:15px;"><li>E-mail OTP, reset, Google sign-in</li><li>Rate limits, security headers</li><li>Self-registering Telegram webhook</li><li>E-mail via Brevo + SMTP fallback</li><li>Corruption channel, chatbot</li><li>Neighbourhood e-mail alerts</li></ul></div>
+    <img class="shot" src="img/mobile_submit.jpg" style="width:230px; border-radius:22px; grid-row: 1 / span 2; grid-column: 4;">
+    <div style="grid-column: 1 / 4; display:grid; grid-template-columns: repeat(3,1fr); gap:18px;">
+      <div class="card" style="padding:14px 18px; text-align:center;"><div style="font-size:34px; font-weight:800; color:var(--navy);">45</div><p style="font-size:14px;">API operations · 9 routers</p></div>
+      <div class="card" style="padding:14px 18px; text-align:center;"><div style="font-size:34px; font-weight:800; color:var(--navy);">11</div><p style="font-size:14px;">database tables</p></div>
+      <div class="card" style="padding:14px 18px; text-align:center;"><div style="font-size:34px; font-weight:800; color:var(--navy);">16</div><p style="font-size:14px;">pages, phone-ready</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 · TECH -->
+<section class="slide" data-n="11"><div class="brand"><i></i>NagarVaani</div>
+  <div class="kicker">Technology</div>
+  <h2>Simple, swappable, deployable on one free-tier service.</h2>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:26px;">
+    <table>
+      <tr><th style="width:30%">Layer</th><th>Choice</th></tr>
+      <tr><td><b>Backend</b></td><td>Python · FastAPI · async SQLAlchemy</td></tr>
+      <tr><td><b>Database</b></td><td>PostgreSQL (Neon) · SQLite locally</td></tr>
+      <tr><td><b>Frontend</b></td><td>Vanilla JS ES modules · Leaflet + OpenStreetMap</td></tr>
+      <tr><td><b>Language AI</b></td><td>Gemini (default) · Claude switchable</td></tr>
+      <tr><td><b>Speech in</b></td><td>Whisper via Hugging Face / Groq / OpenAI</td></tr>
+      <tr><td><b>Speech out</b></td><td>Browser Web Speech API (no key)</td></tr>
+      <tr><td><b>Media · chat · mail</b></td><td>Cloudinary · Telegram Bot API · Brevo</td></tr>
+      <tr><td><b>Auth</b></td><td>bcrypt · JWT · e-mail OTP · Google (optional)</td></tr>
+      <tr><td><b>Hosting</b></td><td>Render (one service) + Neon</td></tr>
+    </table>
+    <div>
+      <div style="background:var(--navy); color:#fff; border-radius:14px; padding:26px; font-size:16px; line-height:1.6;">
+        <div style="font-weight:800; color:var(--saffron); margin-bottom:8px;">Architecture</div>
+        <div style="display:grid; gap:8px;">
+          <div style="background:rgba(255,255,255,.1); padding:9px 12px; border-radius:8px;">👥 Web · Mic · Telegram &nbsp;→&nbsp; 🏛️ Official portal</div>
+          <div style="text-align:center; opacity:.7;">▼ &nbsp; one FastAPI service &nbsp; ▼</div>
+          <div style="background:rgba(245,166,35,.22); padding:9px 12px; border-radius:8px;">STT → Filter → Classify (LLM) → <b>Score (maths)</b> → Brief (LLM)</div>
+          <div style="background:rgba(255,255,255,.1); padding:9px 12px; border-radius:8px;">Translation · place detection · chatbot · alerts</div>
+          <div style="text-align:center; opacity:.7;">▼</div>
+          <div style="background:rgba(255,255,255,.1); padding:9px 12px; border-radius:8px;">PostgreSQL · Cloudinary · Brevo · Telegram</div>
+        </div>
+      </div>
+      <p style="font-size:14px; margin-top:12px;">No framework, no build step — the frontend is served by the same process as the API.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 12 · REAL / STUB / DEMO -->
+<section class="slide" data-n="12"><div class="brand"><i></i>NagarVaani</div>
+  <div class="kicker">Honest status</div>
+  <h2>What's real, what's a stub, what's demo.</h2>
+  <div style="display:grid; grid-template-columns: 1.15fr 1fr 0.9fr; gap:18px;">
+    <div class="card" style="border-top:5px solid var(--ok);"><span class="pill p-ok">REAL — proper backend</span><ul style="font-size:14px; margin-top:10px;"><li>Intake: form, voice, Telegram</li><li>AI pipeline &amp; L1–L5 scoring</li><li>Votes, comments, cross-area links</li><li>Status workflow + <b>jurisdiction enforcement</b></li><li>Disputes &amp; e-mail/Telegram notifications</li><li>Auth, OTP, admin-approved officials</li><li>Hotspot map &amp; statistics from the DB</li><li>Priorities + CSV · translation · read-aloud</li><li>Rate limits &amp; security headers</li></ul></div>
+    <div class="card" style="border-top:5px solid var(--warn);"><span class="pill p-warn">STUB — provision built</span><ul style="font-size:14px; margin-top:10px;"><li>Population factor = default 10,000 (<code>District</code> table not wired)</li><li><b>No</b> infrastructure-index / investment data</li><li><b>No</b> project costs — none invented</li><li>Flag moderation: API only, no screen</li><li>Volunteer forms → e-mail only</li><li>"Our Impact" tiles: coming soon</li><li>Schemes page: fixed list</li></ul></div>
+    <div class="grid" style="gap:18px;">
+      <div class="card" style="border-top:5px solid #6366F1;"><span class="pill p-demo">DEMO — labelled</span><ul style="font-size:14px; margin-top:10px;"><li>Seed users &amp; sample complaints</li><li>"Supporters" placeholder cards</li><li>Example cards before data loads</li></ul></div>
+      <div class="card" style="border-top:5px solid var(--crit);"><span class="pill p-no">NOT BUILT</span><ul style="font-size:14px; margin-top:10px;"><li>WhatsApp / SMS</li><li>Other countries</li><li>Offline / installable</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 13 · QUALITY -->
+<section class="slide" data-n="13"><div class="brand"><i></i>NagarVaani</div>
+  <div class="kicker">Tested and secured</div>
+  <h2>We attacked our own system — and fixed what we found.</h2>
+  <div style="display:grid; grid-template-columns: 330px 1fr; gap:28px;">
+    <div class="grid" style="gap:12px;">
+      <div class="card" style="padding:14px 18px;"><div style="font-size:34px; font-weight:800; color:var(--navy);">76</div><p style="font-size:14px;">scripted endpoint checks — auth, roles, jurisdiction, limits, bad input — all passing</p></div>
+      <div class="card" style="padding:14px 18px;"><div style="font-size:34px; font-weight:800; color:var(--navy);">16</div><p style="font-size:14px;">pages verified in a real browser at desktop and phone width — zero JS errors</p></div>
+      <div class="card" style="padding:14px 18px;"><div style="font-size:34px; font-weight:800; color:var(--crit);">1</div><p style="font-size:14px;">critical account-takeover path found and fixed before submission</p></div>
+    </div>
+    <table>
+      <tr><th style="width:15%">Severity</th><th style="width:47%">Finding</th><th>Fix</th></tr>
+      <tr><td><span class="pill p-no">Critical</span></td><td>Verification endpoint logged in any verified account; API exposed the author's id</td><td>Refuses verified accounts; only an <code>is_author</code> flag is returned</td></tr>
+      <tr><td><span class="pill p-no">High</span></td><td>No brute-force limits on login / 6-digit OTP</td><td>Per-account &amp; per-IP limits (429)</td></tr>
+      <tr><td><span class="pill p-no">High</span></td><td>An official could change <i>any</i> complaint's status</td><td>Enforced inside their jurisdiction</td></tr>
+      <tr><td><span class="pill p-warn">Medium</span></td><td>Forgeable official flag; <code>javascript:</code> image URLs</td><td>Reserved prefix; https-only, no inline JS</td></tr>
+      <tr><td><span class="pill p-warn">Medium</span></td><td>Anonymous endpoints could burn AI credit</td><td>Per-IP limits, input caps, security headers</td></tr>
+    </table>
+  </div>
+  <p style="font-size:14px; margin-top:12px;">Still on the list: token in <code>localStorage</code>, in-memory rate limiter, no CSP yet, AI filter fails open.</p>
+</section>
+
+<!-- 14 · CHALLENGE FIT -->
+<section class="slide" data-n="14"><div class="brand"><i></i>NagarVaani</div>
+  <div class="kicker">Fit to the challenge</div>
+  <h2>Strong on intake and prioritisation. Honest about the data gaps.</h2>
+  <table>
+    <tr><th style="width:38%">Requirement</th><th style="width:14%">Status</th><th>Where we are</th></tr>
+    <tr><td>Voice, text, messaging intake</td><td><span class="pill p-ok">Done</span></td><td>Web · mic · Telegram (WhatsApp not built)</td></tr>
+    <tr><td>Multilingual</td><td><span class="pill p-ok">Done</span></td><td>4 UI languages · AI understands more · two-way translation</td></tr>
+    <tr><td>Aggregate &amp; surface hotspots</td><td><span class="pill p-ok">Done</span></td><td>Scoring, cross-area patterns, live map, ranked priorities</td></tr>
+    <tr><td>Combine with demographic data</td><td><span class="pill p-warn">Partial</span></td><td>Census-2011 state populations in priorities; per-area density still a constant</td></tr>
+    <tr><td>Infrastructure indices · investment plans</td><td><span class="pill p-no">Gap</span></td><td>Not ingested — the largest gap</td></tr>
+    <tr><td>Recommend priority projects</td><td><span class="pill p-warn">Partial</span></td><td>Transparent triage index + matching central scheme; no costs</td></tr>
+    <tr><td>Measure impact</td><td><span class="pill p-warn">Partial</span></td><td>Status log, disputes, resolved counts; no outcome dashboard yet</td></tr>
+    <tr><td>Digital Public Good</td><td><span class="pill p-warn">Partial</span></td><td>MIT licence · privacy note · swappable providers; open-data export pending</td></tr>
+    <tr><td>BRICS</td><td><span class="pill p-no">Gap</span></td><td>India only — scoring &amp; dashboards are country-agnostic; the <b>data pack</b> is not</td></tr>
+  </table>
+</section>
+
+<!-- 15 · EXPAND + ROADMAP -->
+<section class="slide" data-n="15"><div class="brand"><i></i>NagarVaani</div>
+  <div class="kicker">Expansion &amp; roadmap</div>
+  <h2>Every gap is data or a channel — not a rewrite.</h2>
+  <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:18px;">
+    <div class="card" style="border-top:5px solid var(--ok); min-height:330px;"><h3 style="font-size:22px">Now — done</h3><ul style="font-size:17px;"><li style="margin-bottom:14px; font-size:19px; line-height:1.45;">Intake → scoring → officials</li><li style="margin-bottom:14px; font-size:19px; line-height:1.45;">Hotspots, priorities + CSV</li><li style="margin-bottom:14px; font-size:19px; line-height:1.45;">Translation, read-aloud</li><li style="margin-bottom:14px; font-size:19px; line-height:1.45;">Security hardening, deploy</li></ul></div>
+    <div class="card" style="border-top:5px solid var(--warn); min-height:330px;"><h3 style="font-size:22px">Next — weeks</h3><ul style="font-size:17px;"><li style="margin-bottom:14px; font-size:19px; line-height:1.45;">Real district population + one infrastructure dataset → <b>investment-gap</b> view</li><li style="margin-bottom:14px; font-size:19px; line-height:1.45;">Impact dashboard: time-to-resolve, dispute rate, <b>neglect index</b></li><li style="margin-bottom:14px; font-size:19px; line-height:1.45;">Moderation screen; duplicate merging</li><li style="margin-bottom:14px; font-size:19px; line-height:1.45;">Installable / offline web app</li></ul></div>
+    <div class="card" style="border-top:5px solid var(--info); min-height:330px;"><h3 style="font-size:22px">Later — months</h3><ul style="font-size:17px;"><li style="margin-bottom:14px; font-size:19px; line-height:1.45;"><b>BRICS:</b> <code>country</code> field + data pack (states, schemes, languages) per nation</li><li style="margin-bottom:14px; font-size:19px; line-height:1.45;">WhatsApp &amp; SMS/IVR channels</li><li style="margin-bottom:14px; font-size:19px; line-height:1.45;">Costed recommendations from schedules of rates</li><li style="margin-bottom:14px; font-size:19px; line-height:1.45;">Open-data export → full Digital Public Good</li></ul></div>
+  </div>
+  <p style="margin-top:28px; font-size:19px; color:var(--navy);"><b>Hardening on the way:</b> Redis rate limiting · Content-Security-Policy · httpOnly cookies · human-review queue when AI is unavailable.</p>
+</section>
+
+<!-- 16 · BUILT BY + CLOSE -->
+<section class="slide dark" data-n="16" style="padding-top:60px;"><div class="brand"><i></i>NagarVaani</div>
+  <div class="kicker">How it was built</div>
+  <h2 style="font-size:40px; max-width:980px;">One developer. Real decisions. AI as a tool.</h2>
+  <div style="display:grid; grid-template-columns: 1.1fr 1fr; gap:40px; margin-top:12px;">
+    <div>
+      <p>NagarVaani was <b style="color:var(--saffron)">conceived, specified and driven by one developer</b> — the problem framing, the scoring philosophy, what to build and what to leave out, deployment and hands-on testing of every flow.</p>
+      <p style="margin-top:12px;">AI coding assistants wrote and reviewed code faster, the way a compiler or linter helps — while the developer set the requirements, rejected what didn't fit, and verified the result.</p>
+      <p style="margin-top:12px;">The judgement shows: we <b style="color:#fff">removed an invented ₹ figure</b> instead of replacing it, and <b style="color:#fff">fixed a critical flaw</b> found in our own security review.</p>
+    </div>
+    <div style="background:rgba(255,255,255,.08); border-radius:16px; padding:26px 28px;">
+      <div style="font-size:15px; letter-spacing:1.4px; text-transform:uppercase; color:var(--saffron); font-weight:700;">Try it</div>
+      <div style="font-size:26px; font-weight:800; margin:8px 0 14px; color:#fff;">{{LIVE_URL}}</div>
+      <p style="font-size:16px;">Code &amp; docs: <b style="color:#fff">github.com/FalguniTakawale/NagarVaani</b></p>
+      <p style="font-size:16px; margin-top:6px;">Telegram: <b style="color:#fff">@NagarvaaniHackBot</b></p>
+      <p style="font-size:16px; margin-top:6px;">Licence: <b style="color:#fff">MIT</b> · Independent civic-tech prototype</p>
+      <div style="margin-top:20px; font-size:22px; font-weight:800; color:var(--saffron);">Low votes ≠ low importance.</div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
