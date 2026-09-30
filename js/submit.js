@@ -1,3 +1,4 @@
+import { micLanguage } from './voice.js';
 import { api, authUser } from './api.js';
 import { showToast, escapeHtml } from './ui.js';
 import { nav } from './nav.js';
@@ -249,6 +250,7 @@ export function dismissSubmitSuccess() {
    Explains, before submitting, what "anonymous" actually means here and why
    signing in is the alternative — not just what happens after the fact. */
 export function updateSubmitAuthNotice() {
+  micLanguage();  // sync the voice-language picker to the app language
   cityStateOverride = false; // fresh visit to the page — start from the default again
   const anonNotice = document.getElementById('submit-anon-notice');
   const signedInNotice = document.getElementById('submit-signedin-notice');

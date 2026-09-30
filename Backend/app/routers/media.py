@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException, Request, UploadFile, status
+from typing import Optional
+
+from fastapi import APIRouter, Form, HTTPException, Request, UploadFile, status
 
 from app.services.media_storage import upload_image
 from app.services.stt import transcribe_audio
@@ -32,7 +34,7 @@ async def _read_capped(upload: UploadFile, max_bytes: int) -> bytes:
 
 
 @router.post("/stt")
-async def speech_to_text(audio: UploadFile, request: Request):
+async def speech_to_text(audio: UploadFile, request: Request, language: Optional[str] = Form(None)):
     """Shared STT path for the web mic-recording upload — same Whisper call the Telegram voice-note path uses."""
     ip = client_ip(request)
     if not check_rate_limit("media_upload", ip, UPLOAD_LIMIT, UPLOAD_WINDOW):
@@ -47,7 +49,7 @@ async def speech_to_text(audio: UploadFile, request: Request):
         raise HTTPException(status_code=400, detail="File doesn't look like an audio recording")
 
     audio_bytes = await _read_capped(audio, MAX_AUDIO_BYTES)
-    result = await transcribe_audio(audio_bytes, filename=audio.filename or "voice.webm")
+    result = await transcribe_audio(audio_bytes, filename=audio.filename or "voice.webm", language=language)
     return result
 
 

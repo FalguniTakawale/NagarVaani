@@ -1,11 +1,24 @@
 import { API_BASE } from './api.js';
 import { showToast } from './ui.js';
-import { t } from './i18n.js';
+import { t, currentLang } from './i18n.js';
 
 /* ── VOICE INPUT (real mic capture, real transcription via /api/stt) ── */
 let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
+
+/* Default the "language you will speak" picker to the app language (Hindi / Marathi /
+   Tamil), unless the user already chose one. Whisper's auto-detect often mistakes
+   Marathi for Hindi on short clips, so an explicit hint is much more reliable. */
+export function micLanguage() {
+  const sel = document.getElementById('mic-lang');
+  if (!sel) return null;
+  if (!sel.dataset.touched) {
+    const ui = currentLang();
+    sel.value = ['hi', 'mr', 'ta'].includes(ui) ? ui : sel.value;
+  }
+  return sel.value === 'auto' ? null : sel.value;
+}
 
 export async function toggleRecording() {
   const btn = document.getElementById('mic-btn');
@@ -24,6 +37,8 @@ export async function toggleRecording() {
         const blob = new Blob(audioChunks, { type: 'audio/webm' });
         const form = new FormData();
         form.append('audio', blob, 'voice.webm');
+        const hint = micLanguage();
+        if (hint) form.append('language', hint);
         try {
           const res = await fetch(API_BASE + '/stt', { method: 'POST', body: form });
           const result = await res.json();
