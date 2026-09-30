@@ -131,8 +131,9 @@ export const TRANSLATIONS = {
     // right-panel dashboard widget
     'panel.statslabel': '{label} · overall', 'panel.resolutiontext': '{pct}% resolved overall',
     'stat.open': 'Open', 'stat.resolved': 'Resolved', 'stat.critical': 'Critical', 'stat.inprogress': 'In progress',
-    'panel.yourcomplaints': 'Your complaints', 'panel.govtupdates': 'Govt updates',
+    'panel.yourcomplaints': 'Your complaints', 'panel.govtupdates': 'Recent status updates',
     'panel.noupdates': 'No status changes here yet.',
+    'panel.nomine': "You haven't reported anything yet.",
     'notif.title': 'Updates on your complaints', 'notif.guest': "Sign in to see updates on your complaints.",
     'notif.empty': "No status changes on your complaints yet.",
     'chatbot.title': 'NagarVaani Assistant', 'chatbot.placeholder': 'Ask a question…',
