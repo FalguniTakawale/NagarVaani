@@ -83,7 +83,7 @@ Seeded logins:
 | Citizen | `ramesh@test.com` | `Test@1234` |
 | Official (ward officer, Ward 12 Pune) | `official@test.com` | `Official@1234` |
 
-**Testing the official portal / admin:** run `python create_test_officials.py` (add `--allow-production` on a deployed DB, from the Render Shell). It creates three pre-approved accounts — `admin.test@nagarvaani.gov.in` (central + admin), `ward.test@…` (Ward 12, Pune) and `state.test@…` (Maharashtra) — with **random passwords printed once** (nothing hardcoded). Remove them with `--remove` when done; never leave test admins on a public site.
+**Testing the official portal / admin:** run `python create_test_officials.py` (add `--allow-production` on a deployed DB, from the Render Shell). It creates three pre-approved accounts — `admin.test@nagarvaani.gov.in` (central + admin), `ward.test@…` (Ward 12, Pune) and `state.test@…` (Maharashtra) — with **random passwords printed once** (nothing hardcoded). No shell (Render free)? Set `BOOTSTRAP_ADMIN_EMAIL` + `BOOTSTRAP_ADMIN_PASSWORD` in the service environment instead and redeploy — startup creates one approved admin; remove the variables afterwards. Remove script-made accounts with `--remove` when done; never leave test admins on a public site.
 
 ---
 

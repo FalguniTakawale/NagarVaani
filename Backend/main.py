@@ -29,6 +29,8 @@ async def lifespan(app: FastAPI):
         )
     # Create all tables on startup
     await create_tables()
+    from app.services.bootstrap import bootstrap_admin
+    await bootstrap_admin()
     yield
 
 

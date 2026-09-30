@@ -51,6 +51,11 @@ class Settings(BaseSettings):
     # approval either way.
     require_email_verification: bool = True
 
+    # Optional one-off admin for testing on hosts with no shell (see services/bootstrap.py).
+    # Leave unset normally; remove after use.
+    bootstrap_admin_email: str = ""
+    bootstrap_admin_password: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
