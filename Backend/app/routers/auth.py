@@ -74,7 +74,18 @@ async def _issue_otp(db: AsyncSession, user: User) -> None:
     await send_otp_email(user.email, user.name, otp)
 
 
-@router.post("/register", response_model=RegisterOut, status_code=status.HTTP_201_CREATED)
+async def _skip_verification(db: AsyncSession, user: User, password: str | None = None) -> TokenOut:
+    """Only reachable when REQUIRE_EMAIL_VERIFICATION=false (demo hosts with no
+    working SMTP). If an old unverified account re-registers, the password must
+    match the one it was created with, so nobody can claim someone else's address."""
+    if password is not None and not verify_password(password, user.hashed_password):
+        raise HTTPException(status_code=409, detail="Email already registered — sign in instead")
+    user.is_email_verified = True
+    await db.flush()
+    return _token_out(user)
+
+
+@router.post("/register", response_model=RegisterOut | TokenOut, status_code=status.HTTP_201_CREATED)
 async def register(payload: UserCreate, request: Request, db: AsyncSession = Depends(get_db)):
     _throttle("register_ip", client_ip(request), 10, 60 * 60, "Too many sign-ups from this network — try again later")
     if error := validate_password(payload.password):
@@ -91,6 +102,8 @@ async def register(payload: UserCreate, request: Request, db: AsyncSession = Dep
     if existing:
         if not existing.is_email_verified:
             # Same person retrying after an abandoned signup — just send a new code.
+            if not settings.require_email_verification:
+                return await _skip_verification(db, existing, payload.password)
             await _issue_otp(db, existing)
             return RegisterOut(message="OTP sent", user_id=existing.id, email=existing.email)
         raise HTTPException(status_code=409, detail="Email already registered")
@@ -115,6 +128,8 @@ async def register(payload: UserCreate, request: Request, db: AsyncSession = Dep
     )
     db.add(user)
     await db.flush()
+    if not settings.require_email_verification:
+        return await _skip_verification(db, user)
     await _issue_otp(db, user)
     return RegisterOut(message="OTP sent", user_id=user.id, email=user.email)
 
@@ -178,6 +193,10 @@ async def login(payload: UserLogin, request: Request, db: AsyncSession = Depends
     user = (await db.execute(select(User).where(User.email == payload.email))).scalar_one_or_none()
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    if not user.is_email_verified and not settings.require_email_verification:
+        user.is_email_verified = True   # password already checked above
+        await db.flush()
 
     if not user.is_email_verified:
         # Object detail so the frontend can jump straight to the OTP step.

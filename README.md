@@ -110,6 +110,7 @@ All read from `Backend/.env` (see `.env.example`).
 | `TELEGRAM_BOT_TOKEN` | No | From @BotFather. Enables the `/api/telegram/webhook` channel. |
 | `TELEGRAM_WEBHOOK_SECRET` | Prod if bot used | Random string; pass the same value as `secret_token` to `setWebhook`. Requests without it get a bare 403. |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | No | Gmail SMTP for signup OTP + welcome email. Without them the OTP is printed to the server log instead. |
+| `REQUIRE_EMAIL_VERIFICATION` | No (`true`) | Set `false` only for a demo host that cannot send email (Render free blocks SMTP): new citizen accounts are verified immediately and old unverified ones on next login. Never on a real deployment. |
 | `GOOGLE_CLIENT_ID` | No | "Continue with Google" sign-in. Without it, the button is hidden and password sign-in works as before. |
 
 ---

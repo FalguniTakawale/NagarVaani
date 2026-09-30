@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     smtp_pass: str = ""
     smtp_from: str = ""  # defaults to smtp_user
 
+    # Demo/prototype escape hatch: set REQUIRE_EMAIL_VERIFICATION=false when the
+    # host can't send email (e.g. Render free tier blocks SMTP). New citizen
+    # accounts are then verified immediately and stuck unverified ones are
+    # verified on next login. Default true = normal OTP flow. Do not disable this
+    # on a real deployment; official accounts still need admin approval either way.
+    require_email_verification: bool = True
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
