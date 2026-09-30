@@ -21,7 +21,7 @@ from app.config import get_settings
 from app.database import AsyncSessionLocal, engine
 from app.models.models import (
     Comment, Complaint, ComplaintCategory, ComplaintStatus, District,
-    EmailVerification, LinkedArea, OfficialLevel, StatusLog, User, UserRole, Vote,
+    EmailVerification, LinkedArea, OfficialLevel, OfficialVerificationStatus, StatusLog, User, UserRole, Vote,
 )
 from app.services.ai_engine import (
     INDIA_SEASONS, detect_places_in_comment, generate_official_brief,
@@ -101,6 +101,8 @@ async def create_users(session):
         name="Ward Officer Desai", email="official@test.com", hashed_password=hash_password("Official@1234"),
         role=UserRole.official, official_level=OfficialLevel.ward_officer,
         ward="12", city="Pune", state="Maharashtra", area="Shivaji Nagar", is_email_verified=True,
+        # Without this the account is rejected by require_official ("pending admin approval").
+        official_status=OfficialVerificationStatus.approved,
     )
     session.add_all([citizen, official])
 
