@@ -5,6 +5,7 @@
 import { applyAuthUI, setUiRefs, logout, startTelegramLink } from './api.js';
 import { showToast, showHelp, closeHelp } from './ui.js';
 import { applyLanguage, setLanguage, toggleLangMenu, t } from './i18n.js';
+import './speak.js';   // read-aloud: registers its own delegated click handler
 import { nav, openComplaint, topbarSearch, trackComplaintById } from './nav.js';
 import { toggleRecording } from './voice.js';
 import { sortToggle, selectCat, voteUp, quickVote, setMyStatusFilter, filterTrendingByArea, clearTrendingAreaFilter, toggleSchemesPanel, toggleNotifMenu, refreshNotifDot, translateCardTitle } from './feed.js';

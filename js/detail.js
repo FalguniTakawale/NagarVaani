@@ -276,7 +276,7 @@ export async function loadComplaintDetail(id) {
       <div class="comment">
         <div class="comment-avatar" style="background:var(--navy)">${(cm.author_name || 'A').slice(0,2).toUpperCase()}</div>
         <div class="comment-bubble">
-          <div class="comment-top"><span class="comment-author">${escapeHtml(cm.author_name || 'Anonymous')}</span>${cm.author_area ? `<span class="comment-location-tag">${escapeHtml(cm.author_area)}</span>` : ''}<span class="comment-time">${new Date(cm.created_at).toLocaleDateString()}<a class="comment-translate" onclick="translateComment('${cm.id}', this)">${t('comment.translate')}</a></span></div>
+          <div class="comment-top"><span class="comment-author">${escapeHtml(cm.author_name || 'Anonymous')}</span>${cm.author_area ? `<span class="comment-location-tag">${escapeHtml(cm.author_area)}</span>` : ''}<span class="comment-time">${new Date(cm.created_at).toLocaleDateString()}<a class="comment-translate" onclick="translateComment('${cm.id}', this)">${t('comment.translate')}</a><a class="comment-translate speak-btn" data-speak="comment" title="Read aloud" role="button" aria-label="Read this comment aloud">🔊</a></span></div>
           <div class="comment-text">${escapeHtml(cm.text)}</div>
           <div class="comment-translation" id="ct-${cm.id}" hidden></div>
           ${cm.detected_places && cm.detected_places.length ? `<div class="comment-nlp-tag">🔍 AI detected "${cm.detected_places.join('", "')}" → auto-linked</div>` : ''}

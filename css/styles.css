@@ -1191,3 +1191,10 @@ body.official-mode .page { display: none !important; }
 .nv-share-grid a:hover, .nv-share-grid button:hover { background:var(--bg, #f3f4f6); }
 .nv-modal select, .nv-modal textarea { width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; font-family:inherit; font-size:13px; margin-bottom:10px; }
 .nv-modal .nv-btn.primary { background:var(--navy); color:#fff; border-color:var(--navy); }
+
+
+/* ── READ ALOUD ── */
+.speak-btn { background: none; border: 1px solid var(--border); border-radius: 999px; font-size: 12px; line-height: 1; padding: 4px 8px; cursor: pointer; color: var(--navy); }
+.speak-btn:hover { border-color: var(--saffron); background: var(--saffron-light); }
+.speak-btn.speaking { background: var(--saffron); border-color: var(--saffron-dark); color: var(--navy); }
+a.speak-btn.comment-translate { border: none; padding: 0 0 0 8px; font-size: 12px; }

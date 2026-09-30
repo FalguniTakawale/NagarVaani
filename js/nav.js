@@ -10,6 +10,7 @@ import { loadForOfficials } from './forofficials.js';
 import { loadImpactPage, initOrgSupportPage } from './getinvolved.js';
 import { showChatbotWidget } from './chatbot.js';
 import { initGoogleSignIn } from './auth.js';
+import { stopSpeaking } from './speak.js';
 
 // Trending is deliberately NOT in this list — it's a standalone public
 // preview (top issues + a "sign in for more" prompt), not part of the
@@ -39,6 +40,7 @@ let historyStarted = false;
 
 export function nav(page, opts = {}) {
   const { fromPopstate = false } = opts;
+  stopSpeaking();   // never keep talking after the user moves to another page
   stopMyComplaintsPolling();
   stopNearMePolling();
   document.querySelectorAll('.page').forEach(p => {
