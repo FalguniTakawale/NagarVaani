@@ -120,3 +120,22 @@ if (!document.body.classList.contains('official-mode')) {
     nav('landing');
   }
 }
+
+
+/* Stock photos on the Impact / Get-involved pages are hot-linked from Pexels. If one
+   fails to load (blocked network, removed photo) show a neutral tile instead of a
+   broken-image icon. Handles images that already failed before this ran, too. */
+function softenBrokenImage(img) {
+  if (img.dataset.softened) return;
+  img.dataset.softened = '1';
+  img.style.visibility = 'hidden';
+  const parent = img.parentElement;
+  if (parent && !parent.dataset.fallback) {
+    parent.dataset.fallback = '1';
+    parent.style.background = 'linear-gradient(135deg, var(--navy-subtle), var(--saffron-light))';
+  }
+}
+document.querySelectorAll('img').forEach(img => {
+  img.addEventListener('error', () => softenBrokenImage(img));
+  if (img.complete && img.naturalWidth === 0 && img.src) softenBrokenImage(img);
+});
