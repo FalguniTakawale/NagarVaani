@@ -21,7 +21,7 @@ from app.services.auth import get_current_user, require_user, require_official
 from app.services.jurisdiction import apply_jurisdiction
 from app.services.rate_limit import check_rate_limit, client_ip, seconds_until_reset
 from app.services.telegram_client import send_message as tg_send
-from app.services.email import send_status_update_email
+from app.services.email import send_email, send_status_update_email
 from app.routers.subscriptions import notify_nearby_subscribers
 from app.services.ai_engine import (
     process_complaint_pipeline,
@@ -436,18 +436,25 @@ async def get_related_complaints(
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
 
-    # Tier 2 — same category, same city/ward, excluding self
-    similar_q = select(Complaint).where(
+    if complaint.category == ComplaintCategory.corruption:
+        return {"similar_in_area": [], "cross_pattern": [], "elsewhere": [], "summary": None}
+
+    # Tier 2 — the same kind of problem elsewhere in the SAME CITY (every ward, not
+    # just this one), same-ward first. This is what lets neighbours and officials
+    # see that one locality's problem is repeated across the city and can be fixed
+    # together — and whether earlier reports were ever resolved.
+    base = [
         Complaint.id != complaint_id,
         Complaint.category == complaint.category,
-        Complaint.is_ai_filtered == True,
-    )
-    if complaint.ward:
-        similar_q = similar_q.where(Complaint.ward == complaint.ward)
-    elif complaint.city:
-        similar_q = similar_q.where(Complaint.city == complaint.city)
-    similar_q = similar_q.order_by(desc(Complaint.priority_score)).limit(5)
-    similar = (await db.execute(similar_q)).scalars().all()
+        Complaint.is_ai_filtered == True,  # noqa: E712
+    ]
+    similar = []
+    if complaint.city:
+        same_ward_first = (Complaint.ward == complaint.ward).desc() if complaint.ward else Complaint.priority_score.desc()
+        similar = (await db.execute(
+            select(Complaint).where(*base, Complaint.city == complaint.city)
+            .order_by(same_ward_first, desc(Complaint.priority_score)).limit(8)
+        )).scalars().all()
 
     # Tier 3 — any complaint located in one of this complaint's linked areas
     linked_names = [la.area_name for la in complaint.linked_areas]
@@ -457,7 +464,8 @@ async def get_related_complaints(
             select(Complaint)
             .where(
                 Complaint.id != complaint_id,
-                Complaint.is_ai_filtered == True,
+                Complaint.is_ai_filtered == True,  # noqa: E712
+                Complaint.category != ComplaintCategory.corruption,
                 (Complaint.area.in_(linked_names)) | (Complaint.city.in_(linked_names)) | (Complaint.ward.in_(linked_names)),
             )
             .order_by(desc(Complaint.priority_score))
@@ -465,19 +473,46 @@ async def get_related_complaints(
         )
         cross_pattern = (await db.execute(cross_q)).scalars().all()
 
+    # "See also across the country" — the same problem type in OTHER cities, so a
+    # pattern (e.g. monsoon drainage) is visible nationally, not just locally.
+    elsewhere_q = select(Complaint).where(*base)
+    if complaint.city:
+        elsewhere_q = elsewhere_q.where((Complaint.city != complaint.city) | (Complaint.city.is_(None)))
+    elsewhere = (await db.execute(elsewhere_q.order_by(desc(Complaint.priority_score)).limit(5))).scalars().all()
+
+    # Accountability numbers: how many reports of this problem type, and how many
+    # were actually resolved, in this city and nationwide.
+    async def counts(*conds):
+        total = (await db.execute(select(func.count(Complaint.id)).where(
+            Complaint.category == complaint.category, Complaint.is_ai_filtered == True, *conds))).scalar() or 0  # noqa: E712
+        done = (await db.execute(select(func.count(Complaint.id)).where(
+            Complaint.category == complaint.category, Complaint.is_ai_filtered == True,  # noqa: E712
+            Complaint.status == ComplaintStatus.resolved, *conds))).scalar() or 0
+        return {"total": total, "resolved": done, "unresolved": total - done}
+
+    summary = {
+        "city": complaint.city,
+        "in_city": await counts(Complaint.city == complaint.city) if complaint.city else None,
+        "nationwide": await counts(),
+    }
+
     def brief(c):
         return {
             "id": c.id,
             "text": (c.text_translated or c.text_original)[:100],
             "category": c.category,
             "priority_score": c.priority_score,
+            "status": c.status,
             "ward": c.ward,
             "city": c.city,
+            "state": c.state,
         }
 
     return {
         "similar_in_area": [brief(c) for c in similar],
         "cross_pattern": [brief(c) for c in cross_pattern],
+        "elsewhere": [brief(c) for c in elsewhere],
+        "summary": summary,
     }
 
 
@@ -822,6 +857,28 @@ async def update_status(
                 author.email, author.name, complaint_id, complaint_title,
                 status_value, payload.note, official.name,
             )
+
+    # Accountability loop: everyone who voted for this complaint hears that an
+    # official marked it resolved, and can go back and say if it really is.
+    # Best-effort and capped — a mail failure never fails the status update.
+    if payload.status == ComplaintStatus.resolved and old_status != ComplaintStatus.resolved and complaint.category != ComplaintCategory.corruption:
+        try:
+            voters = (await db.execute(
+                select(User).join(Vote, Vote.user_id == User.id)
+                .where(Vote.complaint_id == complaint_id, User.notify_status_change == True,  # noqa: E712
+                       User.id != (complaint.author_id or ""))
+                .limit(100)
+            )).scalars().all()
+            title = (complaint.text_translated or complaint.text_original or "")[:80]
+            for v in voters:
+                await send_email(
+                    v.email, "An issue you supported was marked resolved — NagarVaani",
+                    f"Hi {v.name},\n\nA complaint you voted for was marked resolved by {official.name}:\n"
+                    f"\"{title}\"\n\nIs it really fixed? Open it on NagarVaani and add a comment or your "
+                    f"vote — the original reporter can dispute it if it isn't.\n",
+                )
+        except Exception as e:  # noqa: BLE001
+            print(f"[voter notify failed] {e}")
 
     # Map reactivity + "My Neighborhood" alerts both key off this: a resolved
     # complaint drops off /stats/map (default status_filter="open") and

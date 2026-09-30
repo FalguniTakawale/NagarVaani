@@ -315,9 +315,16 @@ export async function loadComplaintDetail(id) {
   }
 }
 
+function statusPill(st) {
+  const label = { open: 'Open', in_progress: 'In progress', resolved: 'Resolved', disputed: 'Disputed', rejected: 'Rejected' }[st] || st;
+  const color = st === 'resolved' ? 'var(--success)' : st === 'disputed' ? 'var(--critical)' : 'var(--slate)';
+  return `<span style="font-size:11px;font-weight:600;color:${color};margin-left:6px;">${escapeHtml(label)}</span>`;
+}
+
 function relatedRow(c) {
-  return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="openComplaint('${c.id}')">
-    <span>${escapeHtml(c.text)}${c.ward ? ` <span style="color:var(--slate-light);">· Ward ${c.ward}</span>` : ''}</span>
+  const where = [c.ward ? `Ward ${c.ward}` : '', c.city || '', c.state || ''].filter(Boolean).join(', ');
+  return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="openComplaint('${escapeHtml(c.id)}')">
+    <span>${escapeHtml(c.text)}${where ? ` <span style="color:var(--slate-light);">· ${escapeHtml(where)}</span>` : ''}${statusPill(c.status)}</span>
     <span class="score-badge ${scoreBadgeClass(c.priority_score)}" style="min-width:auto;">Score ${Math.round(c.priority_score)}</span>
   </div>`;
 }
@@ -326,82 +333,26 @@ async function loadRelatedComplaints(id) {
   const section = document.getElementById('related-section');
   try {
     const related = await api(`/complaints/${id}/related`);
-    if (!related.similar_in_area.length && !related.cross_pattern.length) {
+    const { similar_in_area: sim, cross_pattern: cross, elsewhere = [], summary } = related;
+    if (!sim.length && !cross.length && !elsewhere.length) {
       section.style.display = 'none';
       return;
     }
     section.style.display = 'block';
-    document.getElementById('related-similar').innerHTML = related.similar_in_area.length
-      ? related.similar_in_area.map(relatedRow).join('')
-      : 'None nearby right now.';
-    document.getElementById('related-cross').innerHTML = related.cross_pattern.length
-      ? related.cross_pattern.map(relatedRow).join('')
+    const c = summary && summary.in_city;
+    document.getElementById('related-summary').innerHTML = summary
+      ? `${c ? `In <b>${escapeHtml(summary.city)}</b>: ${c.total} report(s) of this kind of problem — <b>${c.resolved}</b> resolved, <b>${c.unresolved}</b> still unresolved. ` : ''}Nationwide: ${summary.nationwide.total} reported, ${summary.nationwide.resolved} resolved.`
+      : '';
+    document.getElementById('related-similar').innerHTML = sim.length
+      ? sim.map(relatedRow).join('')
+      : 'No other reports of this kind in your city yet.';
+    document.getElementById('related-cross').innerHTML = cross.length
+      ? cross.map(relatedRow).join('')
       : 'No cross-pattern matches yet — link an area to surface these.';
+    document.getElementById('related-elsewhere').innerHTML = elsewhere.length
+      ? elsewhere.map(relatedRow).join('')
+      : 'No reports of this kind from other cities yet.';
   } catch (err) {
     section.style.display = 'none';
   }
-}
-
-
-/* ── SHARE ── */
-function closeModal() { const m = document.getElementById('nv-modal-back'); if (m) m.remove(); }
-function openModal(html) {
-  closeModal();
-  const back = document.createElement('div');
-  back.className = 'nv-modal-back'; back.id = 'nv-modal-back';
-  back.innerHTML = `<div class="nv-modal" role="dialog" aria-modal="true">${html}</div>`;
-  back.addEventListener('click', (e) => { if (e.target === back) closeModal(); });
-  document.body.appendChild(back);
-}
-window.closeNvModal = closeModal;
-
-export async function shareComplaint() {
-  if (!currentComplaintId) return;
-  const url = `${location.origin}${location.pathname}#detail/${encodeURIComponent(currentComplaintId)}`;
-  const title = (document.getElementById('detail-title').textContent || 'Civic issue').slice(0, 120);
-  const text = `NagarVaani — ${title}`;
-  // Native share sheet on phones (WhatsApp, Messages, etc. appear automatically).
-  if (navigator.share) {
-    try { await navigator.share({ title: 'NagarVaani', text, url }); return; }
-    catch (e) { if (e && e.name === 'AbortError') return; }
-  }
-  const e = encodeURIComponent;
-  openModal(`<h3>Share this issue</h3><div class="sub">${escapeHtml(url)}</div>
-    <div class="nv-share-grid">
-      <a target="_blank" rel="noopener noreferrer" href="https://wa.me/?text=${e(text + ' ' + url)}">WhatsApp</a>
-      <a target="_blank" rel="noopener noreferrer" href="https://t.me/share/url?url=${e(url)}&text=${e(text)}">Telegram</a>
-      <a target="_blank" rel="noopener noreferrer" href="https://twitter.com/intent/tweet?text=${e(text)}&url=${e(url)}">X / Twitter</a>
-      <a target="_blank" rel="noopener noreferrer" href="https://www.facebook.com/sharer/sharer.php?u=${e(url)}">Facebook</a>
-      <a href="mailto:?subject=${e(text)}&body=${e(url)}">Email</a>
-      <button type="button" id="nv-copy-link">Copy link</button>
-    </div>
-    <button class="nv-btn" onclick="closeNvModal()">Close</button>`);
-  document.getElementById('nv-copy-link').onclick = async () => {
-    try { await navigator.clipboard.writeText(url); showToast('Link copied'); closeModal(); }
-    catch { prompt('Copy this link:', url); }
-  };
-}
-
-/* ── FLAG (citizen report → admin moderation queue) ── */
-export function flagComplaint() {
-  if (!currentComplaintId) return;
-  openModal(`<h3>Flag this complaint</h3><div class="sub">Sends it to a moderator for review. It stays visible until reviewed.</div>
-    <select id="flag-reason">
-      <option value="spam">Spam / advertisement</option>
-      <option value="fake">Fake or false report</option>
-      <option value="abusive">Abusive or hateful</option>
-      <option value="duplicate">Duplicate of another complaint</option>
-      <option value="other">Something else</option>
-    </select>
-    <textarea id="flag-note" rows="2" maxlength="500" placeholder="Optional details"></textarea>
-    <div class="nv-share-grid"><button class="nv-btn" onclick="closeNvModal()">Cancel</button><button class="nv-btn primary" id="flag-submit">Submit flag</button></div>`);
-  document.getElementById('flag-submit').onclick = async () => {
-    try {
-      const r = await api(`/complaints/${currentComplaintId}/report`, {
-        method: 'POST',
-        body: JSON.stringify({ reason: document.getElementById('flag-reason').value, note: document.getElementById('flag-note').value }),
-      });
-      closeModal(); showToast(r.message);
-    } catch (err) { showToast(err.message); }
-  };
 }
