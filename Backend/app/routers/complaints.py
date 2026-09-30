@@ -613,6 +613,8 @@ async def vote(
         is_safety_risk=complaint.is_safety_risk,
         linked_area_count=complaint.linked_area_count,
         vote_count=new_vote_count,
+        season=(complaint.score_breakdown or {}).get("l2_season"),
+        season_multiplier=complaint.seasonal_multiplier,
     )
     complaint.priority_score = new_score["score"]
     complaint.score_breakdown = new_score["breakdown"]
@@ -750,6 +752,8 @@ async def link_area(
         is_safety_risk=complaint.is_safety_risk,
         linked_area_count=complaint.linked_area_count,
         vote_count=vote_count,
+        season=(complaint.score_breakdown or {}).get("l2_season"),
+        season_multiplier=complaint.seasonal_multiplier,
     )
     complaint.priority_score = new_score["score"]
     complaint.score_breakdown = new_score["breakdown"]

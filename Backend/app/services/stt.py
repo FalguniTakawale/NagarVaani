@@ -5,13 +5,11 @@ recording or Telegram voice messages) go through a hosted Whisper model
 before entering the normal filter -> classify -> score pipeline in
 ai_engine.py.
 
-Default: Hugging Face's free serverless Inference API. No card needed, but
-the free tier can have a cold-start delay (a model that hasn't been called
-recently can take 10-20s to "load" on first request) — this is retried once
-with a short wait, then fails open like everything else in this pipeline.
-
-Set GROQ_API_KEY or OPENAI_API_KEY and flip _PROVIDER below for a faster,
-more demo-reliable alternative if the HF cold starts become a problem.
+The provider is chosen automatically from whichever key is configured, in this
+order: GROQ_API_KEY (free, fastest, no cold starts — recommended for demos),
+HUGGINGFACE_API_KEY (free, but cold starts of 10-20s), OPENAI_API_KEY. Set
+STT_PROVIDER=groq|huggingface|openai to force one. With no key set, voice notes
+return a clear error and everything else keeps working.
 """
 
 import asyncio
@@ -22,7 +20,17 @@ from app.config import get_settings
 
 settings = get_settings()
 
-_PROVIDER = "huggingface"
+def _pick_provider() -> str | None:
+    forced = (getattr(settings, "stt_provider", "") or "").lower()
+    keys = {"groq": settings.groq_api_key, "huggingface": settings.huggingface_api_key, "openai": settings.openai_api_key}
+    if forced in keys and keys[forced]:
+        return forced
+    for name in ("groq", "huggingface", "openai"):
+        if keys[name]:
+            return name
+    return None
+
+
 HF_MODEL = "openai/whisper-large-v3"
 GROQ_MODEL = "whisper-large-v3-turbo"
 OPENAI_MODEL = "whisper-1"
@@ -79,12 +87,12 @@ async def _transcribe_huggingface(audio_bytes: bytes, filename: str) -> dict:
     return {"text": "", "language": None, "error": "HF model still loading — try again in a moment"}
 
 
-async def _transcribe_openai_compatible(audio_bytes: bytes, filename: str) -> dict:
+async def _transcribe_openai_compatible(audio_bytes: bytes, filename: str, provider: str) -> dict:
     import io
 
-    api_key = settings.groq_api_key if _PROVIDER == "groq" else settings.openai_api_key
+    api_key = settings.groq_api_key if provider == "groq" else settings.openai_api_key
     if not api_key:
-        provider_name = "GROQ_API_KEY" if _PROVIDER == "groq" else "OPENAI_API_KEY"
+        provider_name = "GROQ_API_KEY" if provider == "groq" else "OPENAI_API_KEY"
         return {"text": "", "language": None, "error": f"STT unavailable — {provider_name} not configured"}
 
     try:
@@ -92,13 +100,13 @@ async def _transcribe_openai_compatible(audio_bytes: bytes, filename: str) -> di
 
         client = AsyncOpenAI(
             api_key=api_key,
-            base_url="https://api.groq.com/openai/v1" if _PROVIDER == "groq" else None,
+            base_url="https://api.groq.com/openai/v1" if provider == "groq" else None,
         )
         audio_file = io.BytesIO(audio_bytes)
         audio_file.name = filename
 
         result = await client.audio.transcriptions.create(
-            model=GROQ_MODEL if _PROVIDER == "groq" else OPENAI_MODEL,
+            model=GROQ_MODEL if provider == "groq" else OPENAI_MODEL,
             file=audio_file,
         )
         return {"text": result.text, "language": getattr(result, "language", None)}
@@ -112,6 +120,10 @@ async def transcribe_audio(audio_bytes: bytes, filename: str = "voice.ogg") -> d
     Fails open (empty transcript) if no API key is configured or the call fails,
     matching the fail-open pattern already used in ai_engine.py.
     """
-    if _PROVIDER == "huggingface":
+    provider = _pick_provider()
+    if provider is None:
+        return {"text": "", "language": None,
+                "error": "Voice notes are not set up on this server — add GROQ_API_KEY (free) or HUGGINGFACE_API_KEY"}
+    if provider == "huggingface":
         return await _transcribe_huggingface(audio_bytes, filename)
-    return await _transcribe_openai_compatible(audio_bytes, filename)
+    return await _transcribe_openai_compatible(audio_bytes, filename, provider)

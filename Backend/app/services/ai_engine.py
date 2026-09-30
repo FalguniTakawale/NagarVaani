@@ -217,6 +217,8 @@ async def score_complaint(
     population: int = 10000,
     linked_area_count: int = 0,
     vote_count: int = 0,
+    season: Optional[str] = None,
+    season_multiplier: Optional[float] = None,
 ) -> dict:
     """
     Priority = severity x vote multiplier. Severity (L1 safety + L3 category +
@@ -228,7 +230,17 @@ async def score_complaint(
 
     Returns: {score, breakdown, reasoning}
 
-    L1 — Immediate safety risk (score floor 90+, overrides all)
+    `season` / `season_multiplier`: pass the values stored when the complaint was
+    first scored when re-scoring after a vote or linked area. Otherwise the
+    multiplier would be recomputed from *today's* month, so a monsoon complaint
+    would change score just because someone voted in December.
+
+    Safety risks (L1) score in a 90-99 band ordered by severity, with votes able
+    to add at most +1 point — so votes can never reorder two safety issues whose
+    severity differs by more than a point (previously every safety issue was
+    floored to exactly 90 and the vote nudge alone decided their order).
+
+    L1 — Immediate safety risk (score band 90-99, overrides all)
     L2 — Seasonal amplifier (multiplier on severity)
     L3 — Problem type base weight
     L4 — Population density
@@ -237,8 +249,8 @@ async def score_complaint(
     """
     import math
 
-    season = get_current_season()
-    multiplier = get_seasonal_multiplier(category)
+    season = season or get_current_season()
+    multiplier = season_multiplier if season_multiplier else get_seasonal_multiplier(category)
     base_weight = CATEGORY_BASE_WEIGHTS.get(category, 10)
 
     # L1 — Safety risk: floor of 40 severity points + score floor enforcement
@@ -259,15 +271,16 @@ async def score_complaint(
     # Apply seasonal multiplier to severity
     severity_seasonal = severity * multiplier
 
-    # Safety floor of 90, enforced before the vote nudge
-    severity_floored = max(severity_seasonal, 90) if is_safety_risk else severity_seasonal
-
     # Vote multiplier — gentle, log-scaled, never inverts a severity-based ranking
     vote_multiplier = 1 + math.log10(max(vote_count, 0) + 1) * 0.1
-    final_score = severity_floored * vote_multiplier
 
-    # Cap at 100
-    final_score = min(100, round(final_score, 1))
+    if is_safety_risk:
+        # 90-99 band ordered by severity (severity/15 tops out at 9 points), then
+        # votes add at most +1 (log10(votes+1), reaching the cap at 9 votes).
+        safety_band = 90 + min(9.0, severity_seasonal / 15.0)
+        final_score = min(100, round(safety_band + min(1.0, math.log10(max(vote_count, 0) + 1)), 1))
+    else:
+        final_score = min(100, round(severity_seasonal * vote_multiplier, 1))
 
     reasoning = (
         f"L1={'safety risk +40' if is_safety_risk else 'no safety risk'}, "
@@ -275,8 +288,8 @@ async def score_complaint(
         f"L4=population {population} → +{l4}, "
         f"L5={linked_area_count} linked areas → +{l5}. "
         f"Severity={severity} × L2 season {season}/{category} (×{multiplier}) = {round(severity_seasonal, 1)}"
-        f"{', floored to 90 (safety risk)' if is_safety_risk and severity_seasonal < 90 else ''}. "
-        f"× vote multiplier {round(vote_multiplier, 3)} ({vote_count} votes, log-scaled, weakest signal) = {final_score}."
+        f"{'; safety risk → 90-99 band by severity, votes add at most +1' if is_safety_risk else ''}. "
+        f"Vote multiplier {round(vote_multiplier, 3)} ({vote_count} votes, log-scaled, weakest signal) → {final_score}."
     )
 
     return {
